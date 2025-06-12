@@ -1,0 +1,758 @@
+// Effect Syntax Guide: https://docs.cocos.com/creator/manual/zh/shader/index.html
+
+CCEffect %{
+  techniques:
+  - name: test1
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test1:frag
+      properties: &props-test1
+        # mainTexture:    { value: white }
+        # mainColor:      { value: [1, 1, 1, 1], editor: { type: color } }
+  - name: test2
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test2:frag
+      properties: &props-test2
+  - name: test3
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test3:frag
+      properties: &props-test3
+  - name: test4
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test4:frag
+      properties: &props-test4
+  - name: test5
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test5:frag
+      properties: &props-test6
+  - name: test6
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test6:frag
+      properties: &props-test6
+  - name: test7
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test7:frag
+      properties: &props-test7
+  - name: test8
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test8:frag
+      properties: &props-test8
+  - name: test9
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test9:frag
+      properties: &props-test9
+  - name: test10
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test10:frag
+      properties: &props-test10
+  - name: test11
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test11:frag
+      properties: &props-test11
+  - name: test12
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test12:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      properties: &props-test12
+  - name: test13
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: test13:frag
+      properties: &props-test13
+}%
+
+CCProgram sprite-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+
+CCProgram test1 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  // Plot a line on Y using a value between 0.0-1.0
+  float plot(vec2 st) {    
+      return smoothstep(0.05, 0.0, abs(st.y - st.x));
+  }
+
+  vec4 frag () {
+    vec2 st = uv0;
+    float y = st.x;
+    vec3 color = vec3(y);
+
+    // Plot a line
+    float pct = plot(st);
+    color = (1.0-pct)*color+pct*vec3(0.0,1.0,0.0);
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+CCProgram test2 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  // Plot a line on Y using a value between 0.0-1.0
+  float plot(vec2 st, float pct){
+    return  smoothstep( pct-0.02, pct, st.y) -
+            smoothstep( pct, pct+0.02, st.y);
+  }
+
+  vec4 frag () {
+    vec2 st = uv0;
+    // float y = pow(st.x,5.0);
+    // float y = exp(st.x)/10.0;
+    float y = smoothstep(-10.0,10.0,log(st.x));
+    // float y = sqrt(st.x);
+    vec3 color = vec3(y);
+
+    // Plot a line
+    float pct = plot(st,y);
+    color = (1.0-pct)*color+pct*vec3(0.0,1.0,0.0);
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+CCProgram test3 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+
+  vec3 colorA = vec3(0.149,0.141,0.912);
+  vec3 colorB = vec3(1.000,0.833,0.224);
+
+  // Plot a line on Y using a value between 0.0-1.0
+  float plot(vec2 st, float pct){
+    return  smoothstep( pct-0.02, pct, st.y) -
+            smoothstep( pct, pct+0.02, st.y);
+  }
+
+  vec4 frag () {
+    vec2 st = uv0;
+    vec3 color = vec3(0.0);
+    vec3 pct = vec3(st.x);
+
+    pct.r = smoothstep(0.0,1.0, st.x);
+    pct.g = sin(st.x*PI);
+    pct.b = pow(st.x,0.5);
+    
+    color = mix(colorA, colorB, pct);
+
+    // Plot transition lines for each channel
+    color = mix(color,vec3(1.0,0.0,0.0),plot(st,pct.r));
+    color = mix(color,vec3(0.0,1.0,0.0),plot(st,pct.g));
+    color = mix(color,vec3(0.0,0.0,1.0),plot(st,pct.b));
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+CCProgram test4 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+
+    // We map x (0.0 - 1.0) to the hue (0.0 - 1.0)
+    // And the y (0.0 - 1.0) to the brightness
+    color = hsv2rgb_smooth(vec3(st.x,1.0,st.y));
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+
+CCProgram test5 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+
+    // Use polar coordinates instead of cartesian
+    vec2 toCenter = vec2(0.5)-st;
+    float angle = atan(toCenter.y,toCenter.x);
+    float radius = length(toCenter)*2.0;
+
+    // We map x (0.0 - 1.0) to the hue (0.0 - 1.0)
+    // And the y (0.0 - 1.0) to the brightness
+    // color = hsb2rgb(vec3((angle/TWO_PI)+0.5,radius,1.0));
+    float p = (angle/TWO_PI + 0.5);
+    float c_mix = mix(0.,-0.3,1.-p);
+    float c_add = 1. - smoothstep(0.0,0.42,p);
+    // c_add = 0.0;
+    p += c_mix + 0.3*c_add;
+    // p = c_add;
+    // p = p * 0.5;
+    color = vec3(p);
+    if(radius < 1.) {
+      color = hsb2rgb(vec3(color.r,radius,1.0));
+    }
+
+
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+
+CCProgram test6 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+
+  vec3 draw_square(vec2 uv,vec2 bl,vec2 tr,float w) {
+    vec2 bl1 = step(bl,uv);
+    vec2 tr1 = 1.0 - step(tr,uv);
+    vec2 bl2 = step(bl+w,uv);
+    vec2 tr2 = 1.0 - step(tr-w,uv);
+    return vec3(bl1.x * bl1.y * tr1.x * tr1.y) - vec3(bl2.x * bl2.y * tr2.x * tr2.y);
+  }
+
+  vec3 draw_solid_square(vec2 uv,vec2 bl,vec2 tr) {
+    vec2 bl1 = step(bl,uv);
+    vec2 tr1 = 1.0 - step(tr,uv);
+    return vec3(bl1.x * bl1.y * tr1.x * tr1.y);
+  }
+  
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+
+    vec2 bl = step(vec2(0.1),st);       // bottom-left
+    vec2 tr = step(vec2(0.1),1.0-st);   // top-right
+
+    //用 smoothstep() 函数代替 step() 函数
+    bl = smoothstep(vec2(0.0),vec2(0.1),st);       // bottom-left
+    tr = smoothstep(vec2(0.0),vec2(0.1),1.0-st);   // top-right
+
+    // 用floor 替代
+    bl = floor(st*10.);       // bottom-left
+    tr = floor((1.0-st)*10.);   // top-right
+
+    color = vec3(bl.x * bl.y * tr.x * tr.y);
+
+    // 绘制长方形 空心
+    color = draw_square(st,vec2(0.5,0.2),vec2(0.9,0.8),0.1);
+    // 绘制长方形 实心
+    color += draw_solid_square(st,vec2(0.2,0.2),vec2(0.3,0.8));
+    
+
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+
+CCProgram test7 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+    float d = 0.0;
+
+    // Remap the space to -1. to 1.
+    st = st *2.-1.;
+
+    // Make the distance field
+    d = length( abs(st)-.3 );
+    // d = length( min(abs(st)-.3,0.) );
+    d = length( max(abs(st)-.9,0.) );
+
+    // Visualize the distance field
+    // color = vec3(fract(d*10.0));
+
+    // Drawing with the distance field
+    // color = vec3( step(.1,d) );
+    // color = vec3( step(.3,d) * step(d,.4));
+    // color = vec3( smoothstep(.3,.4,d)* smoothstep(.6,.5,d));
+    color = vec3( smoothstep(.1,.0,d) );
+
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+CCProgram test8 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+
+  float plot(vec2 st) {    
+      return smoothstep(0.005, 0.0, abs(st.y - st.x));
+  }
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+    
+    vec2 pos = vec2(0.5)-st;
+
+    float r = length(pos)*2.0;
+    float a = atan(pos.y,pos.x);
+
+    vec2 pos2 = (st *2.-1.)*1.;
+    float x = pos2.x;
+    float y = cos(x*3.);
+    // y = abs(cos(x*3.));
+    // y = abs(cos(x*2.5))*0.5+0.3;
+    // y = abs(cos(x*12.)*sin(x*3.))*.8+.1;
+    y = smoothstep(-.5,1., cos(x*10.))*0.2+0.5;
+
+    float f = cos(a*3.);
+    f = abs(cos(a*3.));
+    // 花
+    // f = abs(cos(a*2.5))*.5+.3;
+    // 雪花
+    f = abs(cos(a*12.)*sin(a*3.))*.8+.1;
+    // 齿轮
+    // f = smoothstep(-.5,1., cos(a*10.))*0.2+0.5;
+
+    color = vec3(0.);
+    color.r = 1.-smoothstep(f,f+0.02,r);
+    color.b = step(y,pos2.y) - step(y+0.01,pos2.y);
+    for (float j = 0.0; j < 20.; j++) {
+      color.g += plot(vec2(j*0.1-1.,pos2.y));
+    }
+
+
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+
+CCProgram test9 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+
+  float plot(vec2 st) {    
+      return smoothstep(0.005, 0.0, abs(st.y - st.x));
+  }
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+    float d = 0.0;
+
+    // Remap the space to -1. to 1.
+    st = st *2.-1.;
+
+    // Number of sides of your shape
+    int N = 10;
+    // atan -180 ~ 180
+    // Angle and radius from the current pixel
+    float a = atan(st.x,st.y) + PI;
+    float r = TWO_PI/float(N);
+
+    // Shaping function that modulate the distance
+    d = cos(floor(.5+a/r)*r-a)*length(st);
+
+    color = vec3(1.0-smoothstep(.4,.41,d));
+
+    // color = vec3(cos(floor(.5+a/r)*r-a));
+    // color = vec3(floor(.5+a/r)/float(N));
+    // color = vec3((floor(.5+a/r)*r-a)/r);
+    // color = vec3(a / TWO_PI);
+
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+
+CCProgram test10 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+  #define u_time cc_time.x
+
+  mat2 scale(vec2 _scale){
+      return mat2(_scale.x,0.0,
+                  0.0,_scale.y);
+  }
+
+  mat2 rotate2d(float _angle){
+      return mat2(cos(_angle),-sin(_angle),
+                  sin(_angle),cos(_angle));
+  }
+
+  float box(in vec2 _st, in vec2 _size){
+      _size = vec2(0.5) - _size*0.5;
+      vec2 uv = smoothstep(_size,
+                          _size+vec2(0.001),
+                          _st);
+      uv *= smoothstep(_size,
+                      _size+vec2(0.001),
+                      vec2(1.0)-_st);
+      return uv.x*uv.y;
+  }
+
+  float cross(in vec2 _st, float _size){
+      return  box(_st, vec2(_size,_size/4.)) +
+              box(_st, vec2(_size/4.,_size));
+  }
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+    // 平移
+    // To move the cross we move the space
+    vec2 translate = vec2(cos(u_time),sin(u_time));
+    st += translate*0.35;
+
+    // Show the coordinates of the space on the background
+    // color = vec3(st.x,st.y,0.0);
+
+    // Add the shape on the foreground
+    color += vec3(cross(st,0.25));
+
+    // 旋转
+    vec2 st1 = uv0; 
+    // move space from the center to the vec2(0.0)
+    st1 -= vec2(0.5);
+    // rotate the space
+    // 这里放大是放大坐标系 所以绘制的图会越小 因为绘制的图是固定大小
+    st1 = scale(vec2(sin(u_time)+2.0)) * st1;
+    st1 = rotate2d( sin(u_time)*PI ) * st1;
+    // move it back to the original place
+    st1 += vec2(0.5);
+
+    // Show the coordinates of the space on the background
+    // color = vec3(st1.x,st1.y,0.0);
+
+    // Add the shape on the foreground
+    color += vec3(cross(st1,0.25));
+    // color = vec3(sin(u_time)*0.5+0.5);
+
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+
+CCProgram test11 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+  #define u_time cc_time.x
+
+  float plot(vec2 st) {    
+      return smoothstep(0.005, 0.0, abs(st.y - st.x));
+  }
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+    float d = 0.0;
+    st *= 20.;
+    vec2 index = floor(st);
+    vec2 moveF = mod(index,2.)*2.-1.;
+    float time = mod(u_time,PI);
+    float sin_v = sin(time);
+    float move_x = step(PI*0.5,time);
+    float move_y = 1.-step(PI*0.5,time);
+    st.x += move_x*sin_v*moveF.y;
+    st.y += move_y*sin_v*moveF.x;
+
+    st = fract(st);
+
+    color = vec3(circle(st,0.5));
+
+    return CCFragOutput(vec4(color,1.0));
+  }
+}%
+
+
+CCProgram test12 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+  #define u_time cc_time.x
+
+  float plot(vec2 st) {    
+      return smoothstep(0.005, 0.0, abs(st.y - st.x));
+  }
+
+  float noise (in vec2 st) {
+      vec2 i = floor(st);
+      vec2 f = fract(st);
+
+      // Four corners in 2D of a tile
+      float a = random(i);
+      float b = random(i + vec2(1.0, 0.0));
+      float c = random(i + vec2(0.0, 1.0));
+      float d = random(i + vec2(1.0, 1.0));
+
+      // Smooth Interpolation
+
+      // Cubic Hermine Curve.  Same as SmoothStep()
+      // 三次 Hermite 曲线。和 SmoothStep() 一样
+      vec2 u = f*f*(3.0-2.0*f);
+      // u = smoothstep(0.,1.,f);
+
+      // 四次 Hermite 曲线
+      // vec2 u = f*f*f*(f*(f*6.-15.)+10.);
+
+      // Mix 4 coorners percentages
+      return mix(a, b, u.x) +
+              (c - a)* u.y * (1.0 - u.x) +
+              (d - b) * u.x * u.y;
+  }
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(0.0);
+    float d = 0.0;
+    float x = st.x;
+    float y = st.y;
+    // 三次 Hermite 曲线。和 SmoothStep() 一样
+    y = x*x*(3.0-2.0*x);
+    // 四次 Hermite 曲线
+    // y = x*x*x*(x*(x*6.-15.)+10.);
+
+    color = vec3(step(y,st.y));
+
+    float v = noise(st);
+    color = vec3(v);
+
+    float t = fract(u_time);
+    vec4 texture_color = texture(cc_spriteTexture, st);
+    float a = smoothstep(.15 + t,.2 + t,noise(st*50.)); // 黑色的泼溅点
+    // color -= smoothstep(.35 + t,.4 + t,noise(st*50.)); // 泼溅点上的洞
+    // color = vec3(a);
+    // color += a;
+
+    return CCFragOutput(vec4(texture_color.rgb,texture_color.a*a));
+  }
+}%
+
+CCProgram test13 %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  in vec3 v_position;
+  #include <./bl-fs>
+
+  #define PI 3.14159265359
+  #define TWO_PI 6.28318530718
+  #define u_time cc_time.x
+
+  vec4 frag () {
+    vec2 st = uv0; 
+    vec3 color = vec3(.0);
+
+    // Cell positions
+    vec2 point[4];
+    point[0] = vec2(0.83,0.75);
+    point[1] = vec2(0.60,0.07);
+    point[2] = vec2(0.28,0.64);
+    point[3] =  vec2(0.31,0.26);
+
+    float m_dist = 1.;  // minimum distance
+
+    // Iterate through the points positions
+    for (int i = 0; i < 4; i++) {
+        float dist = distance(st, point[i]);
+
+        // Keep the closer distance
+        m_dist = min(m_dist, dist);
+    }
+
+    // Draw the min distance (distance field)
+    color += m_dist;
+
+    // Show isolines
+    // color -= step(.7,abs(sin(50.0*m_dist)))*.3;
+
+    return CCFragOutput(vec4(color,1.));
+  }
+}%

@@ -1,0 +1,188 @@
+// Effect Syntax Guide: https://docs.cocos.com/creator/manual/zh/shader/index.html
+
+CCEffect %{
+  techniques:
+  - name: light
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: unlit-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties: &props
+        alphaThreshold:    { value: 0.5 }
+}%
+
+CCProgram sprite-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+
+CCProgram unlit-fs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #include <builtin/internal/embedded-alpha>
+  #include <builtin/internal/alpha-test>
+
+  #define iTime cc_time.x
+
+  in vec4 color;
+  in vec2 uv0;
+  #if USE_TEXTURE
+    #pragma builtin(local)
+    layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+  #endif
+
+  float hash12(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  // 获得2维随机数
+  vec2 hash22(vec2 uv) {
+    uv = vec2(dot(uv,vec2(127.1,311.7)),
+              dot(uv,vec2(269.5,183.3)));
+    return fract(sin(uv) * 43758.5453123);
+  }
+  // 绘制发光球
+  // st 当前渲染点位置 pos 球位置 r 球半径 球颜色 col
+  vec3 burst(vec2 st,vec2 pos,float r,vec3 col) {
+    st -= pos;
+    r = r * r;
+    // 通过距离比算出渲染点位置 颜色 越远越趋近 0
+    return (r / dot(st,st)) * col;
+  }
+
+  // v 初始速度 a 加速度 p0 起始点 t 运行时间 ang 运动方向 
+  vec2 get_pos(float v,vec2 a,vec2 p0,float t,float ang) {
+    return p0 + vec2(v * cos(ang), v * sin(ang)) * t + 0.5 * a * t * t;
+  }
+
+  // v 初始速度 a 加速度 t 运行时间 ang 运动方向 
+  vec2 get_velocity(float v,vec2 a,float t,float ang) {
+    return vec2(v * cos(ang), v * sin(ang)) + a * t;
+  }
+  
+  
+  vec4 frag () {
+    vec4 o = vec4(0, 0, 0, 1);
+    vec2 size = vec2(200.0,100.0);
+    // 将uv 转换成 size大小 的坐标系
+    vec2 uv = size * uv0;
+
+    float iv = 0.; // 初始速度
+    const vec2 acc = vec2(0.,-9.8); // 重量加速度
+    float ang = radians(90.); // 粒子的发射角度
+    float r = 1.0; // 烟花半径
+    float sr = 0.5; // 烟花粒子半径
+    const float np = 20.;// 烟花个数
+    const float snp = 20.;// 炸出来的粒子个数
+
+    vec3 pcol = vec3(1);
+    for (float i = 0.; i < np; i++) {
+      // 随机区间 0 ~ 1
+      vec2 rand = hash22(vec2(i)*10.);
+      float rand_1 = hash12(rand);
+      // 随机初始化速度
+      iv = mix(100., 200., rand.y);
+
+      // 初始位置
+      vec2 ip = vec2(mix(0.0, size.x, rand_1), -1. + r);
+
+      // 上升运动时间
+      // float t_up = iv * sin(ang) / abs(acc.y);
+      float t_up = 0.5;
+      // 向上运动的最大高度
+      vec2 h_max = get_pos(iv, acc, ip, t_up, ang);
+      // 总运动时间
+      float total_t = t_up + 3.;
+
+      // 随机时间周期
+      float t_i = mod(iTime + 100. * rand.y * rand.x ,total_t + mix(2.,3.,rand.x * rand.y));
+
+      // 当前运动到的位置
+      vec2 s = get_pos(iv, acc, ip, t_i, ang);
+      // 获得当前速度
+      vec2 v = get_velocity(iv, acc, t_i, ang);
+
+      if (t_i < t_up) {
+        // 渲染点
+        o.rgb += burst(uv, s, r, pcol);
+      }
+
+      // 粒子存活时间
+      float s_total_t = 2.0;
+      // 爆炸
+      if ( t_i >= t_up && t_i <= t_up + s_total_t ) {
+        float unit = 360. / snp;
+        for (float j = 0.0; j < snp; j++) {
+          float ang_j = radians(j * unit);
+          float t_j = t_i - t_up;
+          float t_p = t_j/s_total_t;
+          float sin_t = sin(ang_j);
+          float x = 16. * sin_t * sin_t * sin_t;
+          float y = 13. * cos(ang_j) - 5. * cos(2.*ang_j) - 2. * cos(3.*ang_j) - cos(4.*ang_j);
+          x = x * t_p;
+          y = y * t_p;
+          // 半径随时间变小
+          float r_j = sr * (1.0 - t_p);
+          // 烟花粒子速度
+          float jv = 10.0;
+          // vec2 v_j = vec2(v * cos(ang), v * sin(ang));
+          // vec2 ss = get_pos(jv, acc, h_max + vec2(x,y), t_j, ang);
+          vec2 ss = h_max + vec2(x,y);
+
+
+          o.rgb += burst(uv, ss, r_j, vec3(1.,0.,0.));
+        }
+      }
+    }
+
+    // o.rgb = vec3(s.y/size.y);
+  
+    ALPHA_TEST(o);
+    return o;
+  }
+}%

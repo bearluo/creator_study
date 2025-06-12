@@ -1,0 +1,82 @@
+// you can write GLSL code directly in here
+
+#include <builtin/uniforms/cc-global>
+
+#define iResolution cc_screenSize
+#define iTime cc_time.x
+#define iTimeDelta cc_time.y
+#define iFrame cc_time.z
+
+// shadertoy template
+void mainImage (out vec4 fragColor, in vec2 fragCoord) {
+  // Normalized pixel coordinates (from 0 to 1)
+  vec2 uv = fragCoord / iResolution.xy;
+  // Time varying pixel color
+  vec3 col = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
+  // Output to screen
+  fragColor = vec4(col, 1.0);
+}
+
+
+#define TIME cc_time.x
+uniform light_Constant {
+  vec4 effect_color;
+  int octave_count;
+  float amp_start;
+  float amp_coeff;
+  float freq_coeff;
+  float speed;
+};
+
+float hash12(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+vec2 hash22(vec2 uv) {
+  uv = vec2(dot(uv,vec2(127.1,311.7)),
+            dot(uv,vec2(269.5,183.3)));
+  return 2.0 * fract(sin(uv) * 43758.5453123) - 1.0;
+}
+
+// 噪点
+float noise(vec2 uv) {
+  vec2 iuv = floor(uv);  // 整数部分
+  vec2 fuv = fract(uv);  // 小数部分
+  vec2 blur = smoothstep(0.0, 1.0, fuv);  // 平滑插值权重
+  // 四个顶点的哈希值
+  float v00 = dot(hash22(iuv + vec2(0.0, 0.0)), fuv - vec2(0.0, 0.0));
+  float v10 = dot(hash22(iuv + vec2(1.0, 0.0)), fuv - vec2(1.0, 0.0));
+  float v01 = dot(hash22(iuv + vec2(0.0, 1.0)), fuv - vec2(0.0, 1.0));
+  float v11 = dot(hash22(iuv + vec2(1.0, 1.0)), fuv - vec2(1.0, 1.0));
+
+  // 双线性插值
+  float result = mix(mix(v00, v10, blur.x), mix(v01, v11, blur.x), blur.y);
+  return result + 0.5;
+}
+
+// 分形布朗运动 用来生闪电形状
+float fbm(vec2 uv,int octaves) {
+  float value = 0.0;
+  float amplitude = amp_start;
+  for(int i=0;i<10;i++) {
+    // if ( i >= octaves )
+    //   break;
+    value += amplitude * noise(uv);
+    uv *= freq_coeff;
+    amplitude *= amp_coeff;
+  }
+  return value;
+}
+
+
+vec4 light(vec2 uv0) {
+  vec4 o = vec4(1, 1, 1, 1);
+  // 将uv 转换成 -1 ~ 1 的坐标系
+  vec2 uv = 2.0 * uv0 - 1.0;
+  uv += 2.0 * fbm(uv + TIME * speed,octave_count) - 1.0;
+  // 计算到中心位置的距离
+  float dist = max(abs(uv.y), 0.001);
+
+  o = effect_color * mix(0.0,0.05,hash12(vec2(TIME))) / dist;
+  return o;
+}

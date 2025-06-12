@@ -1,0 +1,262 @@
+{
+  "ver": "2.3.13",
+  "importer": "fbx",
+  "imported": true,
+  "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c",
+  "files": [
+    "__original-animation-0.cconb"
+  ],
+  "subMetas": {
+    "30732": {
+      "importer": "gltf-skeleton",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@30732",
+      "displayName": "",
+      "id": "30732",
+      "name": "UnnamedSkeleton-0.skeleton",
+      "userData": {
+        "gltfIndex": 0,
+        "jointsLength": 58
+      },
+      "ver": "1.0.1",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "82579": {
+      "importer": "gltf-mesh",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@82579",
+      "displayName": "",
+      "id": "82579",
+      "name": "heguan001.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 5235
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "7dca1": {
+      "importer": "gltf-mesh",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@7dca1",
+      "displayName": "",
+      "id": "7dca1",
+      "name": "pai004_mesh.mesh",
+      "userData": {
+        "gltfIndex": 1,
+        "triangleCount": 44
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "4e5b8": {
+      "importer": "gltf-mesh",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@4e5b8",
+      "displayName": "",
+      "id": "4e5b8",
+      "name": "pai004_mesh2.mesh",
+      "userData": {
+        "gltfIndex": 2,
+        "triangleCount": 44
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "73b7f": {
+      "importer": "gltf-animation",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@73b7f",
+      "displayName": "",
+      "id": "73b7f",
+      "name": "Take 001.animation",
+      "userData": {
+        "gltfIndex": 0,
+        "wrapMode": 2,
+        "sample": 30,
+        "span": {
+          "from": 0,
+          "to": 44.66666793823242
+        },
+        "events": []
+      },
+      "ver": "1.0.17",
+      "imported": true,
+      "files": [
+        ".cconb"
+      ],
+      "subMetas": {}
+    },
+    "f1394": {
+      "importer": "gltf-skeleton",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@f1394",
+      "displayName": "",
+      "id": "f1394",
+      "name": "UnnamedSkeleton-1.skeleton",
+      "userData": {
+        "gltfIndex": 1,
+        "jointsLength": 1
+      },
+      "ver": "1.0.1",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "75ee4": {
+      "importer": "gltf-skeleton",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@75ee4",
+      "displayName": "",
+      "id": "75ee4",
+      "name": "UnnamedSkeleton-2.skeleton",
+      "userData": {
+        "gltfIndex": 2,
+        "jointsLength": 1
+      },
+      "ver": "1.0.1",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "a96a6": {
+      "importer": "texture",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@a96a6",
+      "displayName": "",
+      "id": "a96a6",
+      "name": "贴图 #1.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "54679507-40f6-4f10-94a4-78dd24f83efc"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "c9e62": {
+      "importer": "gltf-material",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@c9e62",
+      "displayName": "",
+      "id": "c9e62",
+      "name": "heguan_m.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "197cc": {
+      "importer": "gltf-scene",
+      "uuid": "18e1557e-cdc5-4c96-9838-a432aeacf77c@197cc",
+      "displayName": "",
+      "id": "197cc",
+      "name": "heguan_hand_ani.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "贴图 #1",
+        "remap": "54679507-40f6-4f10-94a4-78dd24f83efc",
+        "uri": "db://assets/test/3d/res/tex/heguan.png"
+      }
+    ],
+    "fbx": {
+      "smartMaterialEnabled": true,
+      "matchMeshNames": false
+    },
+    "animationImportSettings": [
+      {
+        "name": "Take 001",
+        "duration": 44.66666793823242,
+        "fps": 30,
+        "splits": [
+          {
+            "name": "Take 001",
+            "from": 0,
+            "to": 44.66666793823242,
+            "wrapMode": 2,
+            "previousId": "73b7f"
+          }
+        ]
+      }
+    ],
+    "assetFinder": {
+      "meshes": [
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@82579",
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@7dca1",
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@4e5b8"
+      ],
+      "skeletons": [
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@30732",
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@f1394",
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@75ee4"
+      ],
+      "textures": [
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@a96a6"
+      ],
+      "materials": [
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@c9e62"
+      ],
+      "scenes": [
+        "18e1557e-cdc5-4c96-9838-a432aeacf77c@197cc"
+      ]
+    },
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,192 @@
+// Effect Syntax Guide: https://docs.cocos.com/creator/manual/zh/shader/index.html
+
+CCEffect %{
+  techniques:
+  - name: random
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: random:frag
+      properties: &props-random
+        # mainTexture:    { value: white }
+        # mainColor:      { value: [1, 1, 1, 1], editor: { type: color } }
+  - name: chaos
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: chaos:frag
+      # blendState:
+      #   targets:
+      #   - blend: true
+      #     blendSrc: src_alpha
+      #     blendDst: one_minus_src_alpha
+      #     blendSrcAlpha: src_alpha
+      #     blendDstAlpha: one_minus_src_alpha
+      properties: &props-chaos
+        scaleCoordinate:    { value: 10 }
+  - name: Truchet
+    passes:
+    - vert: sprite-vs:vert # builtin header
+      frag: Truchet:frag
+      # blendState:
+      #   targets:
+      #   - blend: true
+      #     blendSrc: src_alpha
+      #     blendDst: one_minus_src_alpha
+      #     blendSrcAlpha: src_alpha
+      #     blendDstAlpha: one_minus_src_alpha
+      properties: &props-Truchet
+        scaleCoordinate:    { value: 10 }
+}%
+CCProgram sprite-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+
+CCProgram random %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  #include <./bl-fs>
+  vec4 frag () {
+    vec2 st = uv0 / vec2 (1,1);
+    float rnd = random( st );
+    vec4 col = vec4(vec3(rnd),1.0);
+    return CCFragOutput(col);
+  }
+}%
+
+CCProgram chaos %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  #include <./bl-fs>
+
+  
+
+  uniform Constant {
+    float scaleCoordinate;
+  };
+
+  vec4 frag () {
+    vec2 st = uv0 / vec2 (1,1);
+    st *= scaleCoordinate; // Scale the coordinate system by 10
+    vec2 ipos = floor(st);  // get the integer coords
+    vec2 fpos = fract(st);  // get the fractional coords
+
+    // Assign a random value based on the integer coord
+    vec3 color = vec3(random( ipos ));
+
+    // Uncomment to see the subdivided grid
+    color = vec3(fpos,0.0);
+    vec4 col = vec4(color,1.0);
+    return CCFragOutput(col);
+  }
+}%
+
+CCProgram Truchet %{
+  precision highp float;
+  #include <legacy/output>
+  #include <legacy/fog-fs>
+  #include <builtin/internal/sprite-texture>
+  //local uniforms
+  #include <builtin/uniforms/cc-local>
+  //global uniforms
+  #include <builtin/uniforms/cc-global>
+  in vec2 uv0;
+  #include <./bl-fs>
+
+  #define PI 3.14159265358979323846
+
+  uniform Constant {
+    float scaleCoordinate;
+  };
+
+  vec2 truchetPattern(in vec2 _st, in float _index){
+      _index = fract(((_index-0.5)*2.0));
+      if (_index > 0.75) {
+          _st = vec2(1.0) - _st;
+      } else if (_index > 0.5) {
+          _st = vec2(1.0-_st.x,_st.y);
+      } else if (_index > 0.25) {
+          _st = 1.0-vec2(1.0-_st.x,_st.y);
+      }
+      return _st;
+  }
+
+  vec4 frag () {
+    vec2 st = uv0;
+    st *= scaleCoordinate; // Scale the coordinate system by 10
+    vec2 ipos = floor(st);  // get the integer coords
+    vec2 fpos = fract(st);  // get the fractional coords
+
+    vec2 tile = truchetPattern(fpos, random( ipos ));
+    // vec2 tile = truchetPattern(fpos, 0.8);
+
+    float color = 0.0;
+
+    // Maze
+    color = smoothstep(tile.x-0.3,tile.x,tile.y)-
+            smoothstep(tile.x,tile.x+0.3,tile.y);
+
+    // Circles
+    // color = (step(length(tile),0.6) -
+    //          step(length(tile),0.4) ) +
+    //         (step(length(tile-vec2(1.)),0.6) -
+    //          step(length(tile-vec2(1.)),0.4) );
+
+    // Truchet (2 triangles)
+    color = step(tile.x,tile.y);
+
+    // Uncomment to see the subdivided grid
+    vec4 col = vec4(vec3(color),1.0);
+    return CCFragOutput(col);
+  }
+}%
+

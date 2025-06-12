@@ -1,0 +1,271 @@
+{
+  "ver": "2.3.13",
+  "importer": "fbx",
+  "imported": true,
+  "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af",
+  "files": [
+    "__original-animation-0.cconb"
+  ],
+  "subMetas": {
+    "30732": {
+      "importer": "gltf-skeleton",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@30732",
+      "displayName": "",
+      "id": "30732",
+      "name": "UnnamedSkeleton-0.skeleton",
+      "userData": {
+        "gltfIndex": 0,
+        "jointsLength": 12
+      },
+      "ver": "1.0.1",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "c44bb": {
+      "importer": "gltf-mesh",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@c44bb",
+      "displayName": "",
+      "id": "c44bb",
+      "name": "heguan.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 676
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "92a8f": {
+      "importer": "gltf-mesh",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@92a8f",
+      "displayName": "",
+      "id": "92a8f",
+      "name": "shafa_mesh.mesh",
+      "userData": {
+        "gltfIndex": 1,
+        "triangleCount": 1786
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "73b7f": {
+      "importer": "gltf-animation",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@73b7f",
+      "displayName": "",
+      "id": "73b7f",
+      "name": "Take 001.animation",
+      "userData": {
+        "gltfIndex": 0,
+        "wrapMode": 2,
+        "sample": 30,
+        "span": {
+          "from": 0,
+          "to": 44.66666793823242
+        },
+        "events": []
+      },
+      "ver": "1.0.17",
+      "imported": true,
+      "files": [
+        ".cconb"
+      ],
+      "subMetas": {}
+    },
+    "f1394": {
+      "importer": "gltf-skeleton",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@f1394",
+      "displayName": "",
+      "id": "f1394",
+      "name": "UnnamedSkeleton-1.skeleton",
+      "userData": {
+        "gltfIndex": 1,
+        "jointsLength": 1
+      },
+      "ver": "1.0.1",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "a96a6": {
+      "importer": "texture",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@a96a6",
+      "displayName": "",
+      "id": "a96a6",
+      "name": "贴图 #1.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "54679507-40f6-4f10-94a4-78dd24f83efc"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "59f96": {
+      "importer": "texture",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@59f96",
+      "displayName": "",
+      "id": "59f96",
+      "name": "贴图 #2.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "0d7f2a0c-5a42-47f4-bc31-6c14d9f2f551"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "c9e62": {
+      "importer": "gltf-material",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@c9e62",
+      "displayName": "",
+      "id": "c9e62",
+      "name": "heguan_m.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "6bc28": {
+      "importer": "gltf-material",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@6bc28",
+      "displayName": "",
+      "id": "6bc28",
+      "name": "shafa_m.material",
+      "userData": {
+        "gltfIndex": 1
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "7c6e7": {
+      "importer": "gltf-scene",
+      "uuid": "91e19df0-8d32-4541-a9a4-ed76db7bd9af@7c6e7",
+      "displayName": "",
+      "id": "7c6e7",
+      "name": "heguan_body_ani.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "贴图 #1",
+        "remap": "54679507-40f6-4f10-94a4-78dd24f83efc",
+        "uri": "db://assets/test/3d/res/tex/heguan.png"
+      },
+      {
+        "name": "贴图 #2",
+        "remap": "0d7f2a0c-5a42-47f4-bc31-6c14d9f2f551",
+        "uri": "db://assets/test/3d/res/tex/sahfa.png"
+      }
+    ],
+    "fbx": {
+      "smartMaterialEnabled": true,
+      "matchMeshNames": false
+    },
+    "animationImportSettings": [
+      {
+        "name": "Take 001",
+        "duration": 44.66666793823242,
+        "fps": 30,
+        "splits": [
+          {
+            "name": "Take 001",
+            "from": 0,
+            "to": 44.66666793823242,
+            "wrapMode": 2,
+            "previousId": "73b7f"
+          }
+        ]
+      }
+    ],
+    "assetFinder": {
+      "meshes": [
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@c44bb",
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@92a8f"
+      ],
+      "skeletons": [
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@30732",
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@f1394"
+      ],
+      "textures": [
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@a96a6",
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@59f96"
+      ],
+      "materials": [
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@c9e62",
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@6bc28"
+      ],
+      "scenes": [
+        "91e19df0-8d32-4541-a9a4-ed76db7bd9af@7c6e7"
+      ]
+    },
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    }
+  }
+}

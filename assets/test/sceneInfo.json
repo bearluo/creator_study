@@ -1,0 +1,32 @@
+{
+    "sceneInfo": [
+        [
+            "test",
+            "asset/scene-asset-test.scene"
+        ],
+        [
+            "test",
+            "audio/scene-test-audio.scene"
+        ],
+        [
+            "test",
+            "dialog/scene-dialog-test.scene"
+        ],
+        [
+            "test",
+            "loading/scene-loading-test.scene"
+        ],
+        [
+            "test",
+            "scene/scene-scene-test-001.scene"
+        ],
+        [
+            "test",
+            "scene/scene-scene-test.scene"
+        ],
+        [
+            "test",
+            "scene-test.scene"
+        ]
+    ]
+}

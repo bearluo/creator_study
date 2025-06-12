@@ -1,0 +1,60 @@
+{
+  "__type__": "cc.Material",
+  "_name": "",
+  "_objFlags": 0,
+  "__editorExtras__": {},
+  "_native": "",
+  "_effectAsset": {
+    "__uuid__": "cdda9b59-c0fb-44d0-a5c5-5bf028558c49",
+    "__expectedType__": "cc.EffectAsset"
+  },
+  "_techIdx": 1,
+  "_defines": [
+    {},
+    {}
+  ],
+  "_states": [
+    {
+      "rasterizerState": {},
+      "depthStencilState": {},
+      "blendState": {
+        "targets": [
+          {}
+        ]
+      }
+    },
+    {
+      "rasterizerState": {},
+      "depthStencilState": {},
+      "blendState": {
+        "targets": [
+          {}
+        ]
+      }
+    }
+  ],
+  "_props": [
+    {
+      "mainTexture": {
+        "__uuid__": "46ec65cb-eed5-4d93-908e-0d882d81110f@6c48a",
+        "__expectedType__": "cc.Texture2D"
+      },
+      "dissolverTexture": {
+        "__uuid__": "b840aab4-33fc-400f-adaa-2b176c449891@6c48a",
+        "__expectedType__": "cc.Texture2D"
+      },
+      "flameTexture": {
+        "__uuid__": "ba9e65a1-2f3e-40bf-b3bd-b9c05bc8ed87@6c48a",
+        "__expectedType__": "cc.Texture2D"
+      },
+      "tintColor": {
+        "__type__": "cc.Color",
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "a": 255
+      }
+    },
+    {}
+  ]
+}

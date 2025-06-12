@@ -1,0 +1,13 @@
+{
+	"loadPrefab" : "scene/common/customLoading",
+    "preloadDirsList" : [
+		{
+			"url" : "scene/common"
+		}
+	],
+    "preloadList" : [
+		{
+			"url" : "scene/scene-scene-test/common_gold2"
+		}
+	]
+}

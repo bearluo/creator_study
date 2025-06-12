@@ -1,0 +1,129 @@
+// Copyright (c) 2017-2020 Xiamen Yaji Software Co., Ltd.
+CCEffect %{
+  techniques:
+  - name: default
+    passes:
+    - vert: spriteRender-vs:vert
+      frag: spriteRender-fs:frag
+      depthStencilState:
+        depthTest: true
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        mainTexture:            { value: grey }
+        mainTexture1:           { value: grey }
+        # mainTiling_Offset:      { value: [1, 1, 0, 0]  }
+        speed:          { value: [0, 0], target: speedAndScale.xy }
+        scale:          { value: [0, 0], target: speedAndScale.zw }
+        color1:              { value: [0.5, 0.5, 0.5, 0.5], editor: { type: color } }
+        color2:              { value: [0.5, 0.5, 0.5, 0.5], editor: { type: color } }
+        color3:              { value: [0.5, 0.5, 0.5, 0.5], editor: { type: color } }
+        color4:              { value: [0.5, 0.5, 0.5, 0.5], editor: { type: color } }
+}%
+
+CCProgram spriteRender-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #include <builtin/uniforms/cc-local>
+
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+
+  in vec3 a_position;
+  in vec2 a_texCoord;
+
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+
+    return pos;
+  }
+}%
+
+CCProgram spriteRender-fs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #define iTime cc_time.x
+
+  in vec2 uv0;
+  #pragma builtin(local)
+  layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+
+  uniform sampler2D mainTexture;
+  uniform sampler2D mainTexture1;
+  uniform FragConstants {
+    vec4 color1;
+    vec4 color2;
+    vec4 color3;
+    vec4 color4;
+    vec4 speedAndScale;
+  };
+
+  vec4 frag () {
+    vec4 o = vec4(1, 1, 1, 1);
+    vec2 speed = speedAndScale.xy;
+    vec2 scale = speedAndScale.zw;
+    // 计算平铺和滚动的 UV 坐标
+    vec2 uv = (uv0 + iTime * speed) * scale;
+
+    // 获取当前平铺的行列索引
+    vec2 tileIndex = floor(uv);
+    vec2 tileUV = fract(uv);
+
+    // // 判断奇数列并水平翻转
+    // if (mod(tileIndex.x, 2.0) == 1.0) {
+    //     tileUV.x = 1.0 - tileUV.x;
+    // }
+
+    // // 判断奇数行并垂直翻转
+    // if (mod(tileIndex.y, 2.0) == 1.0) {
+    //     tileUV.y = 1.0 - tileUV.y;
+    // }
+
+    float col = texture(mainTexture, tileUV).r;
+
+    col += smoothstep(0.,0.9,uv0.y);
+
+    col *= texture(mainTexture1, uv0).r;
+
+    col -= smoothstep(1.2,-0.2,uv0.y);
+
+    col = clamp(col,0.,1.);
+
+    if (col <= 0.4) {
+      o = color1 + smoothstep(0.,0.4,col)*(color2-color1);
+    } else if (col <= 0.8) {
+      o = color2 + smoothstep(0.4,0.8,col)*(color3-color2);
+    } else {
+      o = color3 + smoothstep(0.8,1.,col)*(color4-color3);
+    }
+    
+    return o;
+  }
+}%
