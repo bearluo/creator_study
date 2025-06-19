@@ -2,7 +2,7 @@ import { _decorator, Component, EventTouch, Node, tween, Vec3 } from 'cc';
 import { func } from '../common/FWFunction';
 const { ccclass, property } = _decorator;
 
-export interface IHideData {
+export interface IUIDialogHideData {
     bClickClose?:boolean;
     bRemove?:boolean;
 }
@@ -11,7 +11,7 @@ export interface IHideData {
 export class FWUIDialog extends Component {
     animation: FWUIDialogAnim;
     protected _showData:any;
-    protected _hideData:IHideData;
+    protected _hideData:IUIDialogHideData;
 
 
     protected __preload(): void {
@@ -40,7 +40,7 @@ export class FWUIDialog extends Component {
     /**
      * 隐藏
      */
-    hide(data:IHideData = {}) {
+    hide(data:IUIDialogHideData = {}) {
         this._hideData = data;
         app.manager.ui.dialog.removeDialog(this);
         let {bClickClose=false,bRemove=true} = data;
@@ -55,7 +55,7 @@ export class FWUIDialog extends Component {
         this.animation.playHideAnim(this.onHideAnimCallback.bind(this,bRemove));
     }
 
-    onClickClose(data:IHideData = {}) {
+    onClickClose(data:IUIDialogHideData = {}) {
         data.bClickClose = true;
         this.hide(data);
     }

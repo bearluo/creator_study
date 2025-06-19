@@ -57,8 +57,21 @@ export class FWFile {
      * @param path 文件路径
      * @returns 读取的字符串内容
      */
-    static getStringToFile(path:string) {
+    static getStringFromFile(path:string) {
         return FWFile.readFile(path) as string;
+    }
+
+    /**
+     * 检查文件是否存在
+     * @param path 文件路径
+     * @returns 文件是否存在
+     */
+    static isFileExist(path:string) {
+        if(sys.isNative) {
+            return native.fileUtils.isFileExist(path);
+        } else {
+            return FWFile.getItem(path) !== null;
+        }
     }
 
     /**

@@ -1,11 +1,10 @@
 import { _decorator, Component, EventTouch, Node } from 'cc';
 import { func, uiFunc } from '../common/FWFunction';
-import { Events } from '../events/FWEvents';
 import { log } from '../common/FWLog';
 const { ccclass, property } = _decorator;
 
-@ccclass('UIRoot')
-export class UIRoot extends Component {
+@ccclass('FWUIRoot')
+export class FWUIRoot extends Component {
     staticNode:UIStaticNode
     bindApp:boolean = false;
 
@@ -44,7 +43,7 @@ export class UIStaticNode {
     notice: Node;
     touch: Node;
 
-    init(com:UIRoot) {
+    init(com:FWUIRoot) {
         let parent = com.node;
         this._getOrCreateNode(parent,"dialog");
         this._getOrCreateNode(parent,"notice");
@@ -80,22 +79,22 @@ export class UIStaticNode {
     private _onTouchStart(event?: EventTouch) {
         log.debug("onTouchStart");
         event.preventSwallow = true;
-        app.manager.event.emit(Events.onGameTouchStart,event);
+        app.manager.event.emit(app.manager.event.events.onGameTouchStart,event);
     }
     private _onTouchMove(event?: EventTouch) {
         log.debug("_onTouchMove");
         event.preventSwallow = true;
-        app.manager.event.emit(Events.onGameTouchMove,event);
+        app.manager.event.emit(app.manager.event.events.onGameTouchMove,event);
     }
     private _onTouchEnd(event?: EventTouch) {
         log.debug("_onTouchEnd");
         event.preventSwallow = true;
-        app.manager.event.emit(Events.onGameTouchEnd,event);
+        app.manager.event.emit(app.manager.event.events.onGameTouchEnd,event);
     }
     private _onToucCancel(event?: EventTouch) {
         log.debug("_onToucCancel");
         event.preventSwallow = true;
-        app.manager.event.emit(Events.onGameTouchCancel,event);
+        app.manager.event.emit(app.manager.event.events.onGameTouchCancel,event);
     }
 }
 

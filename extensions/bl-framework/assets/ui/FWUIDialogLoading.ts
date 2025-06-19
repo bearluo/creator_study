@@ -1,6 +1,5 @@
 import { _decorator, assert, Asset, Component, Constructor, EventTouch, Node, Prefab, tween, Vec3 } from 'cc';
 import { func } from '../common/FWFunction';
-import { Events } from '../events/FWEvents';
 import { FWUIDialog } from './FWUIDialog';
 const { ccclass, property } = _decorator;
 

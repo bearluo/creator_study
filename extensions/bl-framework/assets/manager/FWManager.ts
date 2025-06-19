@@ -1,6 +1,6 @@
 import { assert, instantiate, sys } from "cc";
 import { managerRegister } from "./manager/base/FWBaseManager";
-import { manager } from "../common/FWConstant";
+import { managerObject } from "../common/FWConstant";
 
 export class FWManager extends EventTarget {
 
@@ -16,26 +16,26 @@ export class FWManager extends EventTarget {
     }
     
     __preload() {
-        manager.forEach(element => {
+        managerObject.forEach(element => {
             element.__preload();
         });
     }
 
     start() {
-        manager.forEach(element => {
+        managerObject.forEach(element => {
             element.start();
         });
     }
 
     update(deltaTime: number): void {
-        manager.forEach(element => {
+        managerObject.forEach(element => {
             element.update(deltaTime);
         });
     }
 
     dectroy() {
-        let old = Array.from(manager);
-        manager.length = 0;
+        let old = Array.from(managerObject);
+        managerObject.length = 0;
         old.forEach(element => {
             element.dectroy();
         });

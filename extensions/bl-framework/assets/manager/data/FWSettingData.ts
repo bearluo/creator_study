@@ -1,6 +1,5 @@
 import { math } from "cc";
 import { FWDataBase, register } from "./FWDataBase";
-import { Events } from "../../events/FWEvents";
 import { data_key } from "../../common/FWConstant";
 
 export class SettingKey {
@@ -33,7 +32,7 @@ export class FWSettingData extends FWDataBase {
     set bgmVolume(value: number) {
         this._bgmVolume = math.clamp01(value);
         this.setFloat(SettingKey.BGM_VOLUME, value);
-        app.manager.event.emit(Events.onBgmVolumeChanged, this._bgmVolume);
+        app.manager.event.emit(app.manager.event.events.onBgmVolumeChanged, this._bgmVolume);
     }
 
     get bgmVolume(): number {

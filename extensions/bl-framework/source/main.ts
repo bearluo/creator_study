@@ -16,10 +16,14 @@ export const methods: { [key: string]: (...any: any) => any } = {
  * @en Method Triggered on Extension Startup
  * @zh 扩展启动时触发的方法
  */
-export function load() { }
+export function load() { 
+    console.log('bl-framework load');
+}
 
 /**
  * @en Method triggered when uninstalling the extension
  * @zh 卸载扩展时触发的方法
  */
-export function unload() { }
+export function unload() { 
+    console.log('bl-framework unload');
+}

@@ -36,7 +36,7 @@ export class constant {
 /**
  * 管理器
  */
-export const manager:IFWManagerBase[] = []
+export const managerObject:IFWManagerBase[] = []
 
 
 export const data_key = {

@@ -1,9 +1,8 @@
 import { _decorator, Component, EventTouch, Node, tween, UIOpacity, Vec3 } from 'cc';
 import { func } from '../common/FWFunction';
-import { Events } from '../events/FWEvents';
 const { ccclass, property } = _decorator;
 
-export interface IHideData {
+export interface IUILoadingHideData {
     bRemove?:boolean;
 }
 
@@ -44,7 +43,7 @@ export class FWUILoading extends Component {
      * 隐藏
      * @param data {@link IHideData}
      */
-    hide(data:IHideData = {}) {
+    hide(data:IUILoadingHideData = {}) {
         let {bRemove=true} = data;
         app.manager.ui.loading.remove(this);
         this.playHideAnim(bRemove);

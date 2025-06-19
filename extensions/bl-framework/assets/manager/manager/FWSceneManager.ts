@@ -3,31 +3,45 @@ import { FWBaseManager, register } from './base/FWBaseManager';
 import { func, qAsset, uiFunc } from '../../common/FWFunction';
 import { NATIVE } from 'cc/env';
 import { log } from '../../common/FWLog';
-import { Events } from '../../events/FWEvents';
 import { FWBundle } from './FWAssetManager';
 import { constant } from '../../common/FWConstant';
-import { FWUILoading } from '../../ui/FWUILoading';
+import { FWUILoading } from '../../ui';
 const { ccclass, property } = _decorator;
 
+/**
+ * 预加载JSON数据接口
+ */
 interface IPreloadJson {
     url:string;
 }
 
+/**
+ * 场景数据接口 - 定义场景的配置信息
+ */
 interface ISceneData {
-    bundleName?: string;
-    sceneName?: string;
-    loadPrefab?: string;
-    preloadDirsList?: IPreloadJson[];
-    preloadList?: IPreloadJson[];
-    [key:string] : any;
+    bundleName?: string;        // 资源包名称
+    sceneName?: string;         // 场景名称
+    loadPrefab?: string;        // 加载界面预制体路径
+    preloadDirsList?: IPreloadJson[];  // 预加载目录列表
+    preloadList?: IPreloadJson[];      // 预加载资源列表
+    [key:string] : any;         // 其他扩展属性
 }
 
+/**
+ * 场景队列数据接口 - 用于场景切换队列
+ */
 interface ISceneQueueData {
-    bundleName: string;
-    sceneName: string;
+    bundleName: string;         // 资源包名称
+    sceneName: string;          // 场景名称
 }
 
+// 注册场景管理器到全局管理器系统
 register("scene", () => FWSceneManager.instance);
+
+/**
+ * 场景管理器类
+ * 负责场景的加载、切换和预加载管理
+ */
 @ccclass('FWSceneManager')
 export class FWSceneManager extends FWBaseManager {
     // 重写静态实例类型
@@ -40,9 +54,17 @@ export class FWSceneManager extends FWBaseManager {
         }
         return FWSceneManager._instance;
     }
+
+    /** 场景切换队列 */
     private _queue:ISceneQueueData[] = [];
+    /** 是否正在加载场景的标志 */
     private _bLoading:boolean = false;
 
+    /**
+     * 切换场景
+     * @param bundleName 资源包名称
+     * @param sceneName 场景名称
+     */
     changeScene(bundleName: string, sceneName: string) {
         this._queue.push({
             bundleName: bundleName,
@@ -50,24 +72,42 @@ export class FWSceneManager extends FWBaseManager {
         });
     }
 
+    /**
+     * 更新方法 - 每帧调用，处理场景队列
+     * @param deltaTime 帧间隔时间
+     */
     update(deltaTime: number) {
         if(!this._bLoading) {
             this._autoLoadScene()
         }
     }
 
+    /**
+     * 自动加载场景 - 处理场景队列
+     */
     private async _autoLoadScene() {
         let data = this._queue.shift();
         if(data) {
             this._bLoading = true;
-            let scene = await this._LoadScene(data);
-            director.runScene(scene);
+            try {
+                let scene = await this._LoadScene(data);
+                director.runScene(scene);
+            } catch (error) {
+                log.error(error);
+            }
             this._bLoading = false;
         }
     }
 
+    /**
+     * 加载场景的核心方法
+     * @param data 场景队列数据
+     * @returns 加载完成的场景资源
+     */
     private async _LoadScene(data:ISceneQueueData) {
         let {bundleName,sceneName} = data;
+        
+        // 加载资源包
         let bundle = await func.doPromise<FWBundle>((resolve,reject) => {
             app.manager.asset.loadBundle({
                 name:bundleName,
@@ -80,7 +120,10 @@ export class FWSceneManager extends FWBaseManager {
                 }
             });
         })
+        
+        // 加载场景配置数据
         let sceneData = await func.doPromise<ISceneData>((resolve,reject) => {
+            // 检查是否存在场景配置文件
             if(bundle.bundle.getInfoWithPath(sceneName,JsonAsset)) {
                 bundle.load({
                     paths:sceneName,
@@ -97,9 +140,15 @@ export class FWSceneManager extends FWBaseManager {
                 resolve({})
             }
         })
+        
+        // 设置场景数据的基本信息
         sceneData.bundleName = bundleName;
         sceneData.sceneName = sceneName;
+        
+        // 解构场景配置数据
         let {loadPrefab,preloadDirsList=[],preloadList=[]} = sceneData;
+        
+        // 加载界面预制体
         let prefab = constant.default_loadPrefab;
         if (loadPrefab) {
             prefab = await func.doPromise<Prefab>((resolve,reject) => {
@@ -117,6 +166,7 @@ export class FWSceneManager extends FWBaseManager {
             })
         }
         
+        // 创建并显示加载界面
         let uiLoading:FWUILoading
         if(prefab) {
             let obj = instantiate(prefab);
@@ -124,6 +174,7 @@ export class FWSceneManager extends FWBaseManager {
             uiFunc.showLoading(uiLoading);
         }
 
+        // 创建资源加载映射表
         let input:Map<string,{
             uuid: string,
             __isNative__: boolean, 
@@ -132,6 +183,8 @@ export class FWSceneManager extends FWBaseManager {
         }> = new Map();
 
         let assetInfos
+        
+        // 处理预加载资源列表
         preloadList.forEach(data=>{
             //@ts-ignore 这里是有这个config 的 只是没声明
             assetInfos = bundle.bundle.config.paths.get(data.url);
@@ -143,6 +196,7 @@ export class FWSceneManager extends FWBaseManager {
             })
         })
 
+        // 处理预加载目录列表
         preloadDirsList.forEach(data=>{
             assetInfos = bundle.bundle.getDirWithPath(data.url)
             assetInfos.forEach(assetInfo=>{
@@ -153,7 +207,8 @@ export class FWSceneManager extends FWBaseManager {
             })
         })
 
-        let assets = await func.doPromise<any>((resolve,reject) => {
+        // 批量加载所有预加载资源
+        await func.doPromise<any>((resolve,reject) => {
             assetManager.loadAny(
                 Array.from(input.values()),
                 (finished, total, item: AssetManager.RequestItem) => {
@@ -174,8 +229,8 @@ export class FWSceneManager extends FWBaseManager {
                 }
             );
         })
-        assert(assets,"load asset fail");
 
+        // 加载场景资源
         let scene = await func.doPromise<SceneAsset>((resolve,reject) => {
                 bundle.bundle.loadScene(sceneName,(err: Error, data: SceneAsset)=>{
                 if(err) {
@@ -186,12 +241,13 @@ export class FWSceneManager extends FWBaseManager {
             });
         })
 
+        // 隐藏加载界面
         uiLoading?.hide();
         return scene;
     }
 }
 
-
+// 全局类型声明扩展
 declare global {
     namespace globalThis {
         interface IFWManager {

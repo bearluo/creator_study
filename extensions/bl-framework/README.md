@@ -1,6 +1,6 @@
 # Project Title
 
-An blank extension.
+An bl-framework extension.
 
 ## Install
 

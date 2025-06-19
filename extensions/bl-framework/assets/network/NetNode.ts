@@ -146,7 +146,7 @@ export class NetNode {
     }
 
     protected onClosed(event: CloseEvent) {
-        log.printDebug(`onClosed!`);
+        log.debug(`onClosed!`);
         this.clearTimer();
         // 自动重连
         if (this.isAutoReconnect()) {

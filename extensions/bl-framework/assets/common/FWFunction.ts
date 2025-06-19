@@ -1,8 +1,7 @@
-import { _decorator, assert, Asset, AudioClip, AudioSource, Button, Component, Constructor, director, EventHandler, instantiate, log, Node, Pool, Prefab, RenderRoot2D, UITransform, Widget } from 'cc';
+import { _decorator, assert, Asset, AudioClip, AudioSource, Button, Component, Constructor, director, EventHandler, instantiate, log, Node, Pool, Prefab, RenderRoot2D, sys, UITransform, Widget } from 'cc';
 import { Vec2, v2, Vec3, v3, Vec4, v4 } from 'cc';
-import { FWUIDialog } from '../ui/FWUIDialog';
 import { constant } from './FWConstant';
-import { FWUILoading } from '../ui/FWUILoading';
+import { FWUIDialog, FWUILoading } from '../ui';
 import { Log } from './FWLog';
 import { FWTimer } from './FWTimer';
 
@@ -50,7 +49,7 @@ export class Functions {
      * @param func 要执行的函数
      */
     static doNextTick(func:(dt?:number)=>void) {
-        FWTimer.scheduleOnce(func, app, 0);
+        FWTimer.scheduleOnce(func, app.instance, 0);
     }
 
     /**
@@ -127,6 +126,71 @@ export class Functions {
             color += ('00' + value.toString(16)).substr(-2);
         }
         return color;
+    }
+
+    /**
+     * 获取当前操作系统
+     * @returns {string} 返回当前操作系统标识
+     */
+    static getPlatform() {
+        return sys.os;
+    }
+
+    /**
+     * 获取当前运行平台
+     * @returns {string} 返回当前运行平台标识
+     */
+    static getRunningPlatform() {
+        return sys.platform;
+    }
+
+    /**
+     * 检查是否运行在原生平台
+     * @returns {boolean} 如果是原生平台返回 true，否则返回 false
+     */
+    static isNative() {
+        return sys.isNative;
+    }
+
+    /**
+     * 检查是否运行在浏览器平台
+     * @returns {boolean} 如果是浏览器平台返回 true，否则返回 false
+     */
+    static isBrowser() {
+        return sys.isBrowser;
+    }
+
+    /**
+     * 检查是否运行在 iOS 系统
+     * @returns {boolean} 如果是 iOS 系统返回 true，否则返回 false
+     */
+    static isIOS() {
+        return this.getPlatform() === sys.OS.IOS;
+    }
+
+    /**
+     * 检查是否运行在 Android 系统
+     * @returns {boolean} 如果是 Android 系统返回 true，否则返回 false
+     */
+    static isAndroid() {
+        return this.getPlatform() === sys.OS.ANDROID;
+    }
+
+    /**
+     * 检查是否运行在 Windows 系统
+     * @returns {boolean} 如果是 Windows 系统返回 true，否则返回 false
+     */
+    static isWin32() {
+        return this.getPlatform() === sys.OS.WINDOWS;
+    }
+    
+    static getErroMessage = function (e) {
+        if (typeof e === "string") {
+            return e;
+        } else if (e instanceof Error) {
+            return e.message;
+        }
+        return "unknow";
     }
 }
 
