@@ -17,7 +17,7 @@ export const managerRegister: Map<string, FWBaseManagerCtor> = new Map();
  * @param key 管理器的唯一标识键
  * @param ctor 管理器的构造函数
  */
-export function register(key: string, ctor: FWBaseManagerCtor) {
+export function registerManager(key: string, ctor: FWBaseManagerCtor) {
     assert(!managerRegister.has(key), `${key} is already registered`)
     managerRegister.set(key, ctor);
 }

@@ -1,9 +1,8 @@
 import { _decorator, assert, AudioClip, AudioSource, BlockInputEvents, color, Component, director, Eventify, EventTouch, log, Node, Pool, RenderRoot2D, Sprite, SpriteFrame, UITransform, Widget } from 'cc';
-import { FWBaseManager, register } from "./base/FWBaseManager";
+import { FWBaseManager } from "./base/FWBaseManager";
 import { Events } from '../../events/FWEvents';
 const { ccclass, property } = _decorator;
 
-register("event", () => new FWEventManager());
 @ccclass('FWEventManager')
 export class FWEventManager extends FWBaseManager {
     // 重写静态实例类型

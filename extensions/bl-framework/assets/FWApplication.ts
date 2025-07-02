@@ -1,7 +1,6 @@
 import { _decorator, assetManager, Component, EventTarget, director, Node, UITransform, Widget, Prefab, instantiate, AssetManager, RenderRoot2D, System, ISchedulable, Director, Scene } from 'cc';
 
 import { FWTimer } from './common/FWTimer';
-import { BUILD, EDITOR, PREVIEW } from 'cc/env';
 import { FWManager } from './manager';
 const { ccclass, property } = _decorator;
 
@@ -115,38 +114,6 @@ export class FWApplication implements ISchedulable {
 
 /** 应用类型定义 */
 export type ApplicationType = InstanceType<typeof FWApplication>
-
-// 应用初始化逻辑
-// 根据不同的运行环境（编辑器、预览、构建）采用不同的初始化策略
-if (!BUILD) {
-    // 非构建环境下的初始化
-    if(EDITOR && globalThis.isPreviewProcess) {
-        // 编辑器预览模式：等待场景启动后初始化
-        let callback
-        callback = (scene:Scene) => {
-            if( scene.name != "" ) {
-                new FWApplication();
-            } else {
-                director.once(Director.EVENT_AFTER_SCENE_LAUNCH, callback)
-            }
-        }
-        director.once(Director.EVENT_AFTER_SCENE_LAUNCH, callback)
-    }else if(!EDITOR) {
-        // 非编辑器环境：等待场景启动后初始化
-        director.once(Director.EVENT_AFTER_SCENE_LAUNCH, () => {
-            new FWApplication();
-        })
-    } else {
-        // 编辑器环境：直接初始化
-        // console.log("重新初始化Application");
-        // console.log(typeof(app) == "undefined");
-        new FWApplication();
-        // console.log(typeof(app) == "undefined");
-    }
-} else {
-    // 构建环境：直接初始化
-    new FWApplication();
-}
 
 /**
  * 全局类型声明

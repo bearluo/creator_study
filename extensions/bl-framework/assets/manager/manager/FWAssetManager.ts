@@ -1,5 +1,5 @@
 import { __private, _decorator, Asset, assetManager, AssetManager, Component, Constructor, Eventify, EventTarget, instantiate, js, Node } from 'cc';
-import { FWBaseManager, register } from './base/FWBaseManager';
+import { FWBaseManager } from './base/FWBaseManager';
 import { func } from '../../common/FWFunction';
 import { EDITOR, NATIVE } from 'cc/env';
 import { log } from '../../common/FWLog';
@@ -20,9 +20,6 @@ interface IBundleData {
     /** 加载完成回调 */
     onComplete?:(err: Error,bundle:FWBundle)=>void;
 }
-
-// 注册资源管理器到全局管理器
-register("asset", () => FWAssetManager.instance);
 
 /**
  * 资源管理器类

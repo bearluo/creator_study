@@ -1,5 +1,5 @@
 import { _decorator, assert, assetManager, AudioClip, AudioSource, BlockInputEvents, color, Component, director, Eventify, EventTouch, js, native, Node, Pool, RenderRoot2D, Sprite, SpriteFrame, UITransform, Widget } from 'cc';
-import { FWBaseManager, register } from "./base/FWBaseManager";
+import { FWBaseManager } from "./base/FWBaseManager";
 import { func } from '../../common/FWFunction';
 import { log } from '../../common/FWLog';
 import { EDITOR } from 'cc/env';
@@ -10,8 +10,6 @@ const { ccclass, property } = _decorator;
 const system_js = self["System"];
 /**类注册缓存 */
 const script_cache_tab: Record<string, any> = system_js[Reflect.ownKeys(system_js).find((v) => typeof v === "symbol")];
-
-register("hotupdate", () => new FWHotupdateManager());
 @ccclass('FWHotupdateManager')
 export class FWHotupdateManager extends FWBaseManager {
     /**文件搜索路径优先级 */

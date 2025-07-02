@@ -1,12 +1,8 @@
 import { _decorator, AudioClip, AudioSource, Component, director, log, Node, Pool } from 'cc';
-import { FWBaseManager, register } from './base/FWBaseManager';
+import { FWBaseManager } from './base/FWBaseManager';
 import { EDITOR } from 'cc/env';
 const { ccclass, property } = _decorator;
 
-/**
- * 注册音频管理器到全局管理器系统
- */
-register("audio", () => FWAudioManager.instance);
 
 /**
  * 音频管理器类

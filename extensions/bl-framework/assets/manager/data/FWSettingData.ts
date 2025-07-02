@@ -1,5 +1,5 @@
 import { math } from "cc";
-import { FWDataBase, register } from "./FWDataBase";
+import { FWDataBase, registerData } from "./FWDataBase";
 import { data_key } from "../../common/FWConstant";
 
 export class SettingKey {
@@ -7,7 +7,7 @@ export class SettingKey {
     static readonly SFX_VOLUME = "SFX_VOLUME";
 }
 
-register("setting", () => FWSettingData.instance);
+registerData("setting", () => FWSettingData.instance);
 export class FWSettingData extends FWDataBase {
     // 重写静态实例类型
     protected static _instance: FWSettingData | null = null;

@@ -1,5 +1,5 @@
 import { _decorator, assert, AudioClip, AudioSource, BlockInputEvents, color, Component, director, EventTouch, log, Node, Pool, RenderRoot2D, Sprite, SpriteFrame, UITransform, Widget } from 'cc';
-import { FWBaseManager, register } from './base/FWBaseManager';
+import { FWBaseManager } from './base/FWBaseManager';
 import { func, uiFunc } from '../../common/FWFunction';
 import { FWUIDialog, IUIDialogHideData, FWUILoading, FWUIRoot } from '../../ui';
 import { FWUILoadingManager } from './FWUILoadingManager';
@@ -7,11 +7,6 @@ import { FWUIDialogManager } from './FWUIDialogManager';
 import { IAssetConfig } from '../../declare/FWInterface';
 import { EDITOR } from 'cc/env';
 const { ccclass, property } = _decorator;
-
-/**
- * 注册UI管理器到全局管理器系统
- */
-register("ui", () => FWUIManager.instance);
 
 /**
  * UI管理器类

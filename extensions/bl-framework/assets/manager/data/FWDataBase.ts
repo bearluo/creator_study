@@ -18,7 +18,7 @@ export const dataRegister: Map<string, FWDataBaseCtor> = new Map();
  * @param key 数据类标识符
  * @param ctor 数据类构造函数
  */
-export function register(key: string, ctor: FWDataBaseCtor) {
+export function registerData(key: string, ctor: FWDataBaseCtor) {
     assert(!dataRegister.has(key), `${key} is already registered`)
     dataRegister.set(key, ctor);
 }

@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+1.使用样例和测试放到 assets
+
+2.bl-framework 只放核心代码

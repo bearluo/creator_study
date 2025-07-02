@@ -1,5 +1,4 @@
 import { _decorator, sys } from 'cc'
-import { register } from './base/FWBaseManager';
 import { FWNativeAndroid, FWNativeBase, FWNativeBrowser, FWNativeIOS, FWNativeWindows } from '../native';
 
 const { ccclass, property } = _decorator;
@@ -23,8 +22,6 @@ export class FWNativeManager extends FWNativeClass {
         return FWNativeManager._instance;
     }
 }
-
-register("native", () => FWNativeManager.instance);
 
 declare global {
     namespace globalThis {

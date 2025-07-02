@@ -41,6 +41,7 @@
         }
     },
     "dependencies": {
+        "ccc-axios": "^1.0.1",
         "crypto-es": "^2.1.0"
     }
 }

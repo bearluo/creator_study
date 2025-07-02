@@ -1,5 +1,5 @@
 import { __private, _decorator, assert, Asset, assetManager, AssetManager, Component, Constructor, director, Eventify, EventTarget, instantiate, js, JsonAsset, Node, Prefab, Scene, SceneAsset } from 'cc';
-import { FWBaseManager, register } from './base/FWBaseManager';
+import { FWBaseManager } from './base/FWBaseManager';
 import { func, qAsset, uiFunc } from '../../common/FWFunction';
 import { NATIVE } from 'cc/env';
 import { log } from '../../common/FWLog';
@@ -35,8 +35,6 @@ interface ISceneQueueData {
     sceneName: string;          // 场景名称
 }
 
-// 注册场景管理器到全局管理器系统
-register("scene", () => FWSceneManager.instance);
 
 /**
  * 场景管理器类
