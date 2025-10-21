@@ -2,7 +2,7 @@
   "name": "custom-assets",
   "uuid": "80366233-5795-4e53-b333-a72526d31e42",
   "creator": {
-    "version": "3.8.4"
+    "version": "3.8.7"
   },
   "dependencies": {
     "crypto-es": "^2.1.0",
