@@ -1,0 +1,1 @@
+"use strict";module.exports={description:"自定义 Config Asset",show_log:"输出日志"};

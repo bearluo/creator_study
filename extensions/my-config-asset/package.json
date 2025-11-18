@@ -1,0 +1,58 @@
+{
+    "$schema": "./@types/schema/package/index.json",
+    "package_version": 2,
+    "name": "my-config-asset",
+    "version": "1.0.0",
+    "author": "bearluo",
+    "editor": ">=3.8.7",
+    "scripts": {
+        "preinstall": "node ./scripts/preinstall.js",
+        "build": "tsc",
+        "watch": "tsc -w"
+    },
+    "description": "i18n:my-config-asset.description",
+    "main": "./dist/main.js",
+    "dependencies": {
+        "fs-extra": "^10.0.0",
+        "js-yaml": "^4.1.0"
+    },
+    "devDependencies": {
+        "@cocos/creator-types": "^3.8.7",
+        "@types/fs-extra": "^9.0.5",
+        "@types/js-yaml": "^4.0.5",
+        "@types/node": "^18.17.1",
+        "typescript": "^5.8.2"
+    },
+    "contributions": {
+        "asset-db": {
+            "mount": {
+                "path": "./assets",
+                "readonly": true
+            },
+            "script": "./dist/importer/index.js",
+            "asset-handler": [
+                {
+                    "handler": "registerMyConfigImporter",
+                    "name": "my-config",
+                    "extnames": [
+                        ".myconfig"
+                    ]
+                }
+            ]
+        },
+        "menu": [
+            {
+                "path": "i18n:my-config-asset",
+                "label": "i18n:my-config-asset.show_log",
+                "message": "show-log"
+            }
+        ],
+        "messages": {
+            "show-log": {
+                "methods": [
+                    "showLog"
+                ]
+            }
+        }
+    }
+}
