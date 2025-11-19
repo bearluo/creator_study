@@ -2,18 +2,19 @@
   "name": "@bl-framework/behaviortree-ecs",
   "version": "1.0.0",
   "description": "bl-framework Behavior Tree ECS integration",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
   "scripts": {
     "build": "rollup -c rollup.config.cjs",
-    "build:umd": "rollup -c rollup.config.cjs",
+    "build:es": "rollup -c rollup.config.cjs",
     "watch": "tsc -w",
     "test": "jest",
     "prepublishOnly": "npm run build"

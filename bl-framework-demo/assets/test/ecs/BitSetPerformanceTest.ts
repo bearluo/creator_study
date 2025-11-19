@@ -1,5 +1,5 @@
 import { _decorator, Component as CCComponent, Label } from 'cc';
-import { World } from 'db://bl-framework/ecs';
+import { World } from '@bl-framework/ecs';
 import { TransformComponent } from './components/TransformComponent';
 import { VelocityComponent } from './components/VelocityComponent';
 import { HealthComponent } from './components/HealthComponent';

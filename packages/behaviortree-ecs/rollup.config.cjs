@@ -6,13 +6,8 @@ module.exports = {
     input: 'src/index.ts',
     output: {
         file: 'dist/index.js',
-        format: 'umd',
-        name: 'BLFrameworkBehaviorTreeECS',
+        format: 'es',
         sourcemap: true,
-        globals: {
-            '@bl-framework/ecs': 'BLFrameworkECS',
-            '@bl-framework/behaviortree': 'BLFrameworkBehaviorTree'
-        },
         exports: 'named'
     },
     plugins: [

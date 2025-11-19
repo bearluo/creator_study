@@ -1,4 +1,4 @@
-import { System, Query } from 'db://bl-framework/ecs';
+import { System, Query } from '@bl-framework/ecs';
 import { TransformComponent } from '../components/TransformComponent';
 import { VelocityComponent } from '../components/VelocityComponent';
 

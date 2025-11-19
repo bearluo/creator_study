@@ -1,4 +1,4 @@
-import { Component } from 'db://bl-framework/ecs';
+import { Component } from '@bl-framework/ecs';
 
 /**
  * 玩家组件
