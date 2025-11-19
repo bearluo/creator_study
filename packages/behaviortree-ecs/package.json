@@ -1,0 +1,48 @@
+{
+  "name": "@bl-framework/behaviortree-ecs",
+  "version": "1.0.0",
+  "description": "bl-framework Behavior Tree ECS integration",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rollup -c rollup.config.cjs",
+    "build:umd": "rollup -c rollup.config.cjs",
+    "watch": "tsc -w",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "bl-framework",
+    "behaviortree",
+    "behavior-tree",
+    "ecs",
+    "entity-component-system"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@bl-framework/behaviortree": "file:../behaviortree",
+    "@bl-framework/ecs": "file:../ecs"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^18.0.0",
+    "rollup": "^4.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "tslib": "^2.6.0"
+  }
+}
+

@@ -1,0 +1,43 @@
+{
+  "name": "@bl-framework/ecs",
+  "version": "1.0.0",
+  "description": "bl-framework Entity-Component-System framework",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rollup -c rollup.config.cjs",
+    "build:umd": "rollup -c rollup.config.cjs",
+    "watch": "tsc -w",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "bl-framework",
+    "ecs",
+    "entity-component-system",
+    "game-engine"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^18.0.0",
+    "rollup": "^4.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "tslib": "^2.6.0"
+  }
+}
+

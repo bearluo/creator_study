@@ -1,0 +1,15 @@
+{
+  "name": "custom-assets",
+  "uuid": "80366233-5795-4e53-b333-a72526d31e42",
+  "creator": {
+    "version": "3.8.7"
+  },
+  "dependencies": {
+    "@bl-framework/core": "^1.0.0",
+    "@bl-framework/ecs": "^1.0.0",
+    "@bl-framework/behaviortree": "^1.0.0",
+    "@bl-framework/behaviortree-ecs": "^1.0.0",
+    "crypto-es": "^2.1.0",
+    "long": "^5.3.2"
+  }
+}

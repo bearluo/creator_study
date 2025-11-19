@@ -21,6 +21,32 @@
 
 - [行为树系统完成总结](./行为树系统完成总结.md) - 项目完成情况总结
 
+## 🔧 bl-framework 拆分
+
+### 总体计划
+- [bl-framework拆分计划.md](./bl-framework拆分计划.md) - bl-framework 拆分总体计划
+- [VAN_bl-framework拆分分析.md](./VAN_bl-framework拆分分析.md) - VAN 模式拆分分析
+- [PLAN_ECS库拆分计划.md](./PLAN_ECS库拆分计划.md) - ECS 库详细拆分计划
+- [bl-framework-ecs库集成完成总结.md](./bl-framework-ecs库集成完成总结.md) - ECS 库拆分和集成完成总结
+- [bl-framework旧代码清理总结.md](./bl-framework旧代码清理总结.md) - 旧代码清理总结
+- [PLAN_当前进度总结.md](./PLAN_当前进度总结.md) - 当前进度总结
+- [VAN_BehaviorTree库拆分分析.md](./VAN_BehaviorTree库拆分分析.md) - BehaviorTree 库拆分分析
+- [PLAN_BehaviorTree核心库拆分计划.md](./PLAN_BehaviorTree核心库拆分计划.md) - BehaviorTree 核心库详细拆分计划
+- [bl-framework-behaviortree核心库拆分完成总结.md](./bl-framework-behaviortree核心库拆分完成总结.md) - BehaviorTree 核心库拆分完成总结
+- [bl-framework-behaviortree核心库集成完成总结.md](./bl-framework-behaviortree核心库集成完成总结.md) - BehaviorTree 核心库集成完成总结
+- [bl-framework-behaviortree-ecs库拆分完成总结.md](./bl-framework-behaviortree-ecs库拆分完成总结.md) - BehaviorTree ECS 扩展库拆分完成总结
+- [REFLECT_BehaviorTree库拆分完成反思.md](./REFLECT_BehaviorTree库拆分完成反思.md) - BehaviorTree 库拆分完成反思
+- [VAN_behaviortree旧代码清理分析.md](./VAN_behaviortree旧代码清理分析.md) - BehaviorTree 旧代码清理分析
+- [bl-framework-behaviortree旧代码清理总结.md](./bl-framework-behaviortree旧代码清理总结.md) - BehaviorTree 旧代码清理总结
+
+### Core 库
+- [bl-framework-core库规划.md](./bl-framework-core库规划.md) - Core 库详细规划
+- [bl-framework-core库实施进度.md](./bl-framework-core库实施进度.md) - Core 库实施进度
+- [bl-framework-core库完成总结.md](./bl-framework-core库完成总结.md) - Core 库完成总结
+- [bl-framework-core库集成修复总结.md](./bl-framework-core库集成修复总结.md) - Core 库集成修复总结
+- [bl-framework-core库集成计划.md](./bl-framework-core库集成计划.md) - Core 库集成计划
+- [bl-framework-core库集成完成总结.md](./bl-framework-core库集成完成总结.md) - Core 库集成完成总结
+
 ---
 
 ## 📝 文档说明
