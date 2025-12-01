@@ -101,21 +101,21 @@ export class ECSIntegrationTest {
             
             // 绑定 Entity 数据
             if (btComponent.blackboard) {
-                btComponent.blackboard.bindEntityProperty(
+                btComponent.entityBinding?.bindEntityProperty(
                     entity.id,
                     HealthComponent,
                     'health',
                     'health'
                 );
                 
-                btComponent.blackboard.bindEntityProperty(
+                btComponent.entityBinding?.bindEntityProperty(
                     entity.id,
                     HealthComponent,
                     'maxHealth',
                     'maxHealth'
                 );
                 
-                btComponent.blackboard.bindEntityProperty(
+                btComponent.entityBinding?.bindEntityProperty(
                     entity.id,
                     PositionComponent,
                     'position',
@@ -135,9 +135,6 @@ export class ECSIntegrationTest {
             healthComp.health = 30;
             healthComp.takeDamage(10); // 受到伤害
             
-            // 清除黑板缓存，强制重新获取
-            btComponent.blackboard?.clearCache();
-            
             // 再次更新系统，确保访问器已设置
             world.update(0.016);
             
@@ -147,7 +144,7 @@ export class ECSIntegrationTest {
             
             // 测试位置数据
             console.log('\n测试位置数据绑定...');
-            const position = btComponent.blackboard?.get('position');
+            const position = btComponent.entityBinding?.get('position');
             console.log('从黑板获取位置:', position);
             
             console.log('行为树状态:', btComponent.behaviorTree?.getStatus());
@@ -310,14 +307,14 @@ export class ECSIntegrationTest {
             
             // 绑定所有需要的 Entity 数据
             if (btComponent.blackboard) {
-                btComponent.blackboard.bindEntityProperty(
+                btComponent.entityBinding?.bindEntityProperty(
                     entity.id,
                     HealthComponent,
                     'health',
                     'health'
                 );
                 
-                btComponent.blackboard.bindEntityProperty(
+                btComponent.entityBinding?.bindEntityProperty(
                     entity.id,
                     PositionComponent,
                     'position',
@@ -335,7 +332,6 @@ export class ECSIntegrationTest {
             // 第二次执行：生命值降低，应该撤退
             console.log('\n--- 第二次执行（生命值降低到 30）---');
             healthComp.health = 30;
-            btComponent.blackboard?.clearCache(); // 清除缓存，强制重新获取
             world.update(0.016);
             const status2 = tree.execute();
             console.log('执行结果:', status2 === NodeStatus.SUCCESS ? '成功' : '失败');
@@ -344,7 +340,6 @@ export class ECSIntegrationTest {
             // 第三次执行：生命值低，但不在范围内，应该待机
             console.log('\n--- 第三次执行（位置远离目标）---');
             positionComp.setPosition(100, 0, 0);
-            btComponent.blackboard?.clearCache();
             world.update(0.016);
             const status3 = tree.execute();
             console.log('执行结果:', status3 === NodeStatus.SUCCESS ? '成功' : '失败');
