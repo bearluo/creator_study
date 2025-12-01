@@ -1,41 +1,38 @@
 # 活动上下文
 
 ## 当前任务
-**任务**: 计划接入行为树（Behavior Tree）系统  
+**任务**: 将 core 和 creator 剥离，方便不同游戏引擎接入框架  
 **模式**: VAN (Verification, Analysis, Navigation)  
-**日期**: 2025-11-17
+**日期**: 2025-01-27
 
 ## 任务目标
-在 bl-framework 中接入行为树系统，提供 AI 行为控制能力。
+将 bl-framework 的核心功能与 Cocos Creator 特定实现分离，使框架能够适配不同的游戏引擎。
 
 ## 相关背景
-- 项目已有 ECS 系统，可以作为行为树的基础
-- 框架采用模块化设计，便于扩展
-- 已有测试目录结构，可以添加行为树测试
+- 项目已有 4 个核心 npm 包（core, ecs, behaviortree, behaviortree-ecs），这些包已经是引擎无关的
+- Creator 扩展目录包含大量 Creator 特定代码（管理器、UI、网络等）
+- 需要设计抽象层和适配器模式来支持多引擎
 
 ## 当前阶段
-CREATIVE 模式 - API 设计和性能优化方案完成，准备进入 IMPLEMENT 模式
+CREATIVE 模式 - 设计决策完成，可以进入 IMPLEMENT 模式
 
 ## 分析结果
-- **复杂度**: Level 3 - Intermediate Feature
-- **计划文档**: 
-  - `docs/行为树接入计划.md` - 初步计划
-  - `docs/行为树详细实施计划.md` - 详细实施计划
+- **复杂度**: Level 4 - Complex System（架构级重构）
+- **关键发现**:
+  - 核心包（packages/）已经是引擎无关的
+  - Creator 扩展（extensions/bl-framework/assets/）包含大量 Creator 依赖
+  - 需要设计引擎抽象层和适配器模式
+  - 需要保持向后兼容
 
-## 计划完成情况
-- ✅ 任务分解：4个阶段，15个主要任务
-- ✅ 时间估算：7-11天
-- ✅ 依赖关系：已分析
-- ✅ 风险评估：已识别并制定缓解措施
-- ✅ 验收标准：已制定
-
-## CREATIVE 设计完成情况
-- ✅ API 设计：完整的 API 设计文档
-- ✅ 性能优化：5 个优化方案设计
-- ✅ 设计文档：已创建并验证
+## CREATIVE 模式完成情况
+- ✅ 引擎抽象接口设计（IEngine, IResourceManager, IUIManager 等）
+- ✅ 适配器模式设计（Creator 适配器结构）
+- ✅ 依赖注入机制设计（服务定位器 + 可选注入）
+- ✅ 设计文档创建（3个设计文档）
 
 ## 下一步
-- 进入 IMPLEMENT 模式开始实现
-- 使用设计的 API 和优化方案
-- 按照详细计划逐步实施
+- ⏭️ **可以进入 IMPLEMENT 模式**（设计决策已完成）
+- 实现引擎抽象接口
+- 实现 Creator 适配器
+- 重构现有管理器使用抽象接口
 

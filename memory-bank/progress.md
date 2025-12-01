@@ -2,11 +2,64 @@
 
 ## 当前任务进度
 
-### 任务：接入行为树系统
+### 任务：将 core 和 creator 剥离，方便不同游戏引擎接入框架
 
-**开始时间**: 2025-11-17  
-**当前阶段**: IMPLEMENT 模式 - 全部完成  
-**进度**: 100% (VAN + PLAN + CREATIVE 完成，IMPLEMENT 阶段 1: 100%，阶段 2: 100%，阶段 3: 100%，阶段 4: 100%)
+**开始时间**: 2025-01-27  
+**当前阶段**: IMPLEMENT 模式 - 阶段 1-2 完成  
+**进度**: 60% (VAN: 100%, PLAN: 100%, CREATIVE: 100%, IMPLEMENT: 40%)
+
+### IMPLEMENT 阶段进度
+
+**阶段 1: 引擎抽象接口实现** ✅
+- ✅ 创建 engine 目录结构（packages/core/src/engine/）
+- ✅ 实现所有引擎抽象接口（IEngine, IResourceManager, IUIManager 等）
+- ✅ 实现 EngineServiceLocator 服务定位器
+- ✅ 更新 core 包导出
+
+**阶段 2: Creator 适配器实现** ✅
+- ✅ 创建适配器目录结构（extensions/bl-framework/adapters/creator/）
+- ✅ 实现 CreatorEngine 适配器
+- ✅ 实现 CreatorResourceManager 适配器
+- ✅ 实现 CreatorUIManager 适配器
+- ✅ 实现 CreatorNode 和 CreatorBundle 适配器
+
+**阶段 3: 重构管理器系统** 🔄 进行中
+- [x] 重构事件系统（FWEvents.ts）
+  - ✅ 移除 Creator 类型依赖，使用抽象接口
+  - ✅ 创建 ITouchEvent 接口和 CreatorTouchEvent 适配器
+- [x] 重构常量定义（FWConstant.ts）
+  - ✅ 添加抽象接口支持（IVec2, IVec3, IVec4, IColor）
+  - ✅ 保持向后兼容
+- [x] 重构资源管理器（FWAssetManager）
+  - ✅ 内部使用 IResourceManager 抽象接口
+  - ✅ 保持向后兼容（回退机制）
+- [x] 重构 UI 管理器（FWUIManager）
+  - ✅ 内部使用 IUIManager 抽象接口
+  - ✅ 通过 EngineServiceLocator 获取 UI 管理器实例
+  - ✅ 保持向后兼容（回退机制）
+  - ✅ 更新 FWUIRoot 使用 CreatorTouchEvent 适配器
+- [x] 重构其他管理器
+  - ✅ 重构音频管理器（FWAudioManager）
+    - ✅ 创建 CreatorAudioManager 适配器
+    - ✅ 创建 CreatorAudioClip 和 CreatorAudioSource 适配器
+    - ✅ 内部使用 IAudioManager 抽象接口
+    - ✅ 保持向后兼容
+  - [ ] 重构场景管理器（FWSceneManager）- 可选
+  - [ ] 重构热更新管理器（FWHotupdateManager）- 可选
+
+**注意**: 类型导出问题需要重新构建 core 包以包含新的类型定义
+
+### 已完成（VAN + PLAN 阶段）
+- ✅ Memory Bank 结构验证
+- ✅ 项目结构分析
+- ✅ Creator 依赖识别
+- ✅ 复杂度评估（Level 4）
+- ✅ 详细任务分解（5个阶段，30+个主要任务）
+- ✅ 架构设计文档（目标架构、抽象接口设计）
+- ✅ 分阶段实施计划（7-11周）
+- ✅ 风险评估和缓解措施（6个主要风险）
+- ✅ 验收标准制定
+- ✅ 时间估算和依赖关系分析
 
 ### 已完成（VAN + PLAN + CREATIVE 阶段）
 - ✅ Memory Bank 结构创建

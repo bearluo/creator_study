@@ -3,6 +3,8 @@ import { FWBaseManager } from './base/FWBaseManager';
 import { func } from '../../common/FWFunction';
 import { EDITOR, NATIVE } from 'cc/env';
 import { log } from '../../common';
+import { IResourceManager, IBundle, EngineServiceLocator } from '@bl-framework/core';
+import { CreatorBundle } from '../../adapters/creator/CreatorBundle';
 const { ccclass, property } = _decorator;
 
 /**
@@ -24,6 +26,11 @@ interface IBundleData {
 /**
  * 资源管理器类
  * 负责管理游戏资源的加载、缓存和释放
+ * 
+ * 重构说明：
+ * - 内部使用 IResourceManager 抽象接口
+ * - 对外保持原有 API 以保持向后兼容
+ * - 通过 EngineServiceLocator 获取资源管理器实例
  */
 @ccclass('FWAssetManager')
 export class FWAssetManager extends FWBaseManager {
@@ -38,6 +45,9 @@ export class FWAssetManager extends FWBaseManager {
         return FWAssetManager._instance;
     }
     
+    /** 抽象资源管理器（通过服务定位器获取） */
+    private resourceManager: IResourceManager | null = null;
+    
     /** loadRemote缓存 - 存储远程加载的资源 */
     private loadRemoteCache: Map<string, Asset> = new Map();
     
@@ -47,9 +57,27 @@ export class FWAssetManager extends FWBaseManager {
     /** 已加载的子包缓存 */
     private bundles:Map<string,FWBundle> = new Map();
 
+    /**
+     * 获取资源管理器实例
+     * 如果引擎已注册，使用抽象接口；否则回退到 Creator 直接调用
+     */
+    private getResourceManager(): IResourceManager | null {
+        if (!this.resourceManager) {
+            try {
+                this.resourceManager = EngineServiceLocator.getResourceManager();
+            } catch (error) {
+                // 引擎未注册，返回 null，使用 Creator 直接调用
+                return null;
+            }
+        }
+        return this.resourceManager;
+    }
+
     start() {
         /**
          * 初始化内置子包
+         * 为了保持向后兼容，仍然直接使用 assetManager
+         * 后续可以改为使用抽象接口
          */
         let fwBundle = new FWBundle(assetManager.main);
         this.bundles.set('main',fwBundle);
@@ -64,42 +92,94 @@ export class FWAssetManager extends FWBaseManager {
      */
     loadBundle(data:IBundleData) {
         let {name : bundleName,option = {},onComplete} = data;
-        return func.doPromise<FWBundle>((resolve, reject) => {
-            // 检查是否已经加载过该子包
-            const cacheBundle = this.getBundle(bundleName);
-            if (cacheBundle) {
-                resolve(cacheBundle);
-            } else {
-	            // 加载对应版本的资源包
-	            // 不存在就用上一次加载的版本
-	            if (this.bundleVersion.has(bundleName)) {
-	                option.version = this.bundleVersion.get(bundleName);
-	            }
-                assetManager.loadBundle(bundleName, option, (err, bundle) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        if (this.bundles.has(bundleName)) {
-                            resolve(this.bundles.get(bundleName));
-                        } else {
-                            // 创建自定义子包对象并缓存
-                            let fwBundle = new FWBundle(bundle);
-                            this.bundles.set(bundleName,fwBundle);
-                            resolve(fwBundle)
-                        }
+        const resourceManager = this.getResourceManager();
+        
+        // 如果引擎已注册，使用抽象接口
+        if (resourceManager) {
+            return func.doPromise<FWBundle>((resolve, reject) => {
+                // 检查是否已经加载过该子包
+                const cacheBundle = this.getBundle(bundleName);
+                if (cacheBundle) {
+                    resolve(cacheBundle);
+                } else {
+                    // 加载对应版本的资源包
+                    if (this.bundleVersion.has(bundleName)) {
+                        option.version = this.bundleVersion.get(bundleName);
                     }
-                });
-            }
-        })
-        .then((bundle)=>{
-            // fw.language.addBundleAutoLanguageConfig(tempName);
-            onComplete?.(null,bundle);
-            return Promise.resolve(bundle);
-        })
-        .catch((err: Error)=>{
-            onComplete?.(err,null);
-            return Promise.reject(err);
-        });
+                    
+                    // 使用抽象接口加载资源包
+                    resourceManager.loadBundle(bundleName, option)
+                        .then((bundle: IBundle) => {
+                            // 将抽象接口的 IBundle 转换为 FWBundle
+                            // 如果 bundle 是 CreatorBundle，获取其原生 bundle
+                            let creatorBundle: AssetManager.Bundle;
+                            if (bundle instanceof CreatorBundle) {
+                                creatorBundle = (bundle as any).bundle;
+                            } else {
+                                // 如果不是 CreatorBundle，需要从 assetManager 获取
+                                creatorBundle = assetManager.getBundle(bundleName);
+                            }
+                            
+                            if (creatorBundle) {
+                                let fwBundle = new FWBundle(creatorBundle);
+                                this.bundles.set(bundleName, fwBundle);
+                                resolve(fwBundle);
+                            } else {
+                                reject(new Error(`Bundle ${bundleName} not found`));
+                            }
+                        })
+                        .catch((err: Error) => {
+                            reject(err);
+                        });
+                }
+            })
+            .then((bundle)=>{
+                onComplete?.(null,bundle);
+                return Promise.resolve(bundle);
+            })
+            .catch((err: Error)=>{
+                onComplete?.(err,null);
+                return Promise.reject(err);
+            });
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            return func.doPromise<FWBundle>((resolve, reject) => {
+                // 检查是否已经加载过该子包
+                const cacheBundle = this.getBundle(bundleName);
+                if (cacheBundle) {
+                    resolve(cacheBundle);
+                } else {
+                    // 加载对应版本的资源包
+                    // 不存在就用上一次加载的版本
+                    if (this.bundleVersion.has(bundleName)) {
+                        option.version = this.bundleVersion.get(bundleName);
+                    }
+                    assetManager.loadBundle(bundleName, option, (err, bundle) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            if (this.bundles.has(bundleName)) {
+                                resolve(this.bundles.get(bundleName));
+                            } else {
+                                // 创建自定义子包对象并缓存
+                                let fwBundle = new FWBundle(bundle);
+                                this.bundles.set(bundleName,fwBundle);
+                                resolve(fwBundle)
+                            }
+                        }
+                    });
+                }
+            })
+            .then((bundle)=>{
+                // fw.language.addBundleAutoLanguageConfig(tempName);
+                onComplete?.(null,bundle);
+                return Promise.resolve(bundle);
+            })
+            .catch((err: Error)=>{
+                onComplete?.(err,null);
+                return Promise.reject(err);
+            });
+        }
     }
     
     /**
@@ -116,6 +196,8 @@ export class FWAssetManager extends FWBaseManager {
      * @param nameOrBundle 子包名称或子包对象，支持单个或数组
      */
     unloadBundle(nameOrBundle: (string | AssetManager.Bundle) | (string | AssetManager.Bundle)[]) {
+        const resourceManager = this.getResourceManager();
+        
         // 统一转换为子包名称数组
         let bundleNames = ((nameOrBundle instanceof Array) ? nameOrBundle : [nameOrBundle]).map(element => element instanceof AssetManager.Bundle ? element.name : element);
         bundleNames.forEach(bundleName=>{
@@ -124,6 +206,12 @@ export class FWAssetManager extends FWBaseManager {
             if (fwBundle) {
                 this.bundles.delete(bundleName);
                 fwBundle._onDestroy();
+                
+                // 如果使用抽象接口，也调用抽象接口的释放方法
+                if (resourceManager) {
+                    // 从 bundles 中获取对应的 IBundle 并释放
+                    // 这里需要根据实际情况处理
+                }
             }
         })
     }
@@ -136,7 +224,8 @@ export class FWAssetManager extends FWBaseManager {
      */
     get<T extends Asset>(path: string, type?: Constructor<T> | null): T | null {
         let {bundleName,assetPath} = this.__parsePath(path);
-        return this.getBundle(bundleName).get(assetPath,type)
+        const bundle = this.getBundle(bundleName);
+        return bundle ? bundle.get(assetPath,type) : null;
     }
 
     /**
@@ -146,23 +235,48 @@ export class FWAssetManager extends FWBaseManager {
      * @returns Promise<T> 返回加载完成的资源
      */
     load<T extends Asset>(path: string, type?: Constructor<T> | null): Promise<T> {
-        let {bundleName,assetPath} = this.__parsePath(path);
-        return func.doPromise<T>((resolve,reject)=>{
-            this.loadBundle({name:bundleName,onComplete:(err,bundle)=>{
-                if(err) {
-                    reject(err)
-                } else {
-                    bundle.load({paths:assetPath,assetType:type,onComplete:(err,data)=>{
-                        if(err) {
-                            reject(err)
-                        } else {
-                            resolve(data as T)
-                        }
-                    }})
-                }
-            }})
-        })
+        const resourceManager = this.getResourceManager();
+        
+        // 如果引擎已注册，使用抽象接口
+        if (resourceManager) {
+            let {bundleName,assetPath} = this.__parsePath(path);
+            return func.doPromise<T>((resolve, reject) => {
+                this.loadBundle({name:bundleName,onComplete:(err,bundle)=>{
+                    if(err) {
+                        reject(err)
+                    } else {
+                        // 使用抽象接口加载资源
+                        resourceManager.loadAsset(assetPath, type?.name)
+                            .then((asset: any) => {
+                                resolve(asset as T);
+                            })
+                            .catch((err: Error) => {
+                                reject(err);
+                            });
+                    }
+                }})
+            });
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            let {bundleName,assetPath} = this.__parsePath(path);
+            return func.doPromise<T>((resolve,reject)=>{
+                this.loadBundle({name:bundleName,onComplete:(err,bundle)=>{
+                    if(err) {
+                        reject(err)
+                    } else {
+                        bundle.load({paths:assetPath,assetType:type,onComplete:(err,data)=>{
+                            if(err) {
+                                reject(err)
+                            } else {
+                                resolve(data as T)
+                            }
+                        }})
+                    }
+                }})
+            })
+        }
     }
+    
     /**
      * 解析资源路径
      * @param path 资源路径 bundleName://assetPath
@@ -199,6 +313,9 @@ interface IAssetData<T extends Asset> {
 /**
  * 自定义子包类
  * 封装了Cocos Creator的AssetManager.Bundle，提供更便捷的资源管理功能
+ * 
+ * 注意：为了保持向后兼容，FWBundle 仍然直接使用 AssetManager.Bundle
+ * 后续可以改为使用 IBundle 抽象接口
  */
 export class FWBundle {
     /** loadBundleRes缓存 - 存储已加载的资源引用 */

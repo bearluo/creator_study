@@ -1,5 +1,21 @@
-import { Node, EventTouch, Component } from 'cc';
+import { INode } from '@bl-framework/core';
 
+/**
+ * 触摸事件接口（引擎抽象）
+ * 用于替代 Creator 的 EventTouch
+ */
+export interface ITouchEvent {
+    /** 触摸位置 X */
+    getLocationX(): number;
+    /** 触摸位置 Y */
+    getLocationY(): number;
+    /** 触摸位置（数组形式） */
+    getLocation(): [number, number];
+    /** 触摸 ID */
+    getID(): number;
+    /** 触摸类型 */
+    getType(): string;
+}
 
 /**
  * 所有事件名称常量
@@ -22,11 +38,14 @@ export const FWEventNames = {
     // 系统管理相关事件
     MANAGER_INIT_END: 'MANAGER_INIT_END' as const,
 } as const; 
+
 /**
  * 框架全局事件类型映射
  * 
  * 定义了整个框架中使用的事件名称及其参数类型
  * 提供完整的类型安全支持
+ * 
+ * 注意：为了保持引擎无关性，事件参数使用抽象接口而不是 Creator 特定类型
  * 
  * @example
  * ```typescript
@@ -38,7 +57,7 @@ export const FWEventNames = {
  * 
  * // 监听事件(自动推断参数类型)
  * dispatcher.on('ON_UI_ROOT_CHANGED', (uiRoot) => {
- *     // uiRoot 自动推断为 Component 类型
+ *     // uiRoot 自动推断为 INode 类型
  *     console.log('UI根节点已更新', uiRoot);
  * });
  * 
@@ -60,8 +79,10 @@ export interface IFWEvents extends Record<string, any[]> {
      * 
      * 当场景中的UI根节点（UIRoot）发生变化时触发
      * 通常用于通知其他组件UI层级结构已更新
+     * 
+     * @param uiRoot - UI根节点（使用抽象接口 INode）
      */
-    'ON_UI_ROOT_CHANGED': [uiRoot: Component];
+    'ON_UI_ROOT_CHANGED': [uiRoot: INode];
 
     // ==================== 音频相关事件 ====================
     
@@ -94,36 +115,36 @@ export interface IFWEvents extends Record<string, any[]> {
      * 
      * 当用户在游戏界面上开始触摸时触发
      * 
-     * @param event - 触摸事件对象
+     * @param event - 触摸事件对象（使用抽象接口 ITouchEvent）
      */
-    'ON_GAME_TOUCH_START': [event: EventTouch];
+    'ON_GAME_TOUCH_START': [event: ITouchEvent];
     
     /**
      * 游戏触摸移动事件
      * 
      * 当用户在游戏界面上移动触摸时触发
      * 
-     * @param event - 触摸事件对象
+     * @param event - 触摸事件对象（使用抽象接口 ITouchEvent）
      */
-    'ON_GAME_TOUCH_MOVE': [event: EventTouch];
+    'ON_GAME_TOUCH_MOVE': [event: ITouchEvent];
     
     /**
      * 游戏触摸结束事件
      * 
      * 当用户在游戏界面上结束触摸时触发
      * 
-     * @param event - 触摸事件对象
+     * @param event - 触摸事件对象（使用抽象接口 ITouchEvent）
      */
-    'ON_GAME_TOUCH_END': [event: EventTouch];
+    'ON_GAME_TOUCH_END': [event: ITouchEvent];
     
     /**
      * 游戏触摸取消事件
      * 
      * 当用户的触摸被系统取消时触发（如来电、通知等）
      * 
-     * @param event - 触摸事件对象
+     * @param event - 触摸事件对象（使用抽象接口 ITouchEvent）
      */
-    'ON_GAME_TOUCH_CANCEL': [event: EventTouch];
+    'ON_GAME_TOUCH_CANCEL': [event: ITouchEvent];
 
     // ==================== 系统管理相关事件 ====================
     
@@ -158,7 +179,7 @@ export type FWEventName = keyof IFWEvents;
  *     interface IFWEvents {
  *         // 添加你的自定义事件
  *         'PLAYER_SPAWN': [x: number, y: number, playerId: string];
- *         'PLAYER_MOVE': [position: Vec2];
+ *         'PLAYER_MOVE': [position: { x: number; y: number }];
  *         'ENEMY_DEFEATED': [enemyId: string, reward: number];
  *         'LEVEL_COMPLETE': [levelId: number, stars: number];
  *     }

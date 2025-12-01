@@ -1,6 +1,7 @@
 import { _decorator, Component, EventTouch, Node } from 'cc';
 import { func, uiFunc } from '../common/FWFunction';
 import { log } from '../common';
+import { CreatorTouchEvent } from '../adapters/creator/CreatorTouchEvent';
 const { ccclass, property } = _decorator;
 
 @ccclass('FWUIRoot')
@@ -79,22 +80,30 @@ export class UIStaticNode {
     private _onTouchStart(event?: EventTouch) {
         log.debug("onTouchStart");
         event.preventSwallow = true;
-        app.manager.event.emit(app.manager.event.events.ON_GAME_TOUCH_START, event);
+        // 使用适配器将 Creator 的 EventTouch 转换为 ITouchEvent
+        const touchEvent = new CreatorTouchEvent(event);
+        app.manager.event.emit(app.manager.event.events.ON_GAME_TOUCH_START, touchEvent);
     }
     private _onTouchMove(event?: EventTouch) {
         log.debug("_onTouchMove");
         event.preventSwallow = true;
-        app.manager.event.emit(app.manager.event.events.ON_GAME_TOUCH_MOVE, event);
+        // 使用适配器将 Creator 的 EventTouch 转换为 ITouchEvent
+        const touchEvent = new CreatorTouchEvent(event);
+        app.manager.event.emit(app.manager.event.events.ON_GAME_TOUCH_MOVE, touchEvent);
     }
     private _onTouchEnd(event?: EventTouch) {
         log.debug("_onTouchEnd");
         event.preventSwallow = true;
-        app.manager.event.emit(app.manager.event.events.ON_GAME_TOUCH_END, event);
+        // 使用适配器将 Creator 的 EventTouch 转换为 ITouchEvent
+        const touchEvent = new CreatorTouchEvent(event);
+        app.manager.event.emit(app.manager.event.events.ON_GAME_TOUCH_END, touchEvent);
     }
     private _onToucCancel(event?: EventTouch) {
         log.debug("_onToucCancel");
         event.preventSwallow = true;
-        app.manager.event.emit(app.manager.event.events.ON_GAME_TOUCH_CANCEL, event);
+        // 使用适配器将 Creator 的 EventTouch 转换为 ITouchEvent
+        const touchEvent = new CreatorTouchEvent(event);
+        app.manager.event.emit(app.manager.event.events.ON_GAME_TOUCH_CANCEL, touchEvent);
     }
 }
 

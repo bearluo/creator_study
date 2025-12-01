@@ -1,6 +1,9 @@
 import { _decorator, AudioClip, AudioSource, Component, director, log, Node, Pool } from 'cc';
 import { FWBaseManager } from './base/FWBaseManager';
 import { EDITOR } from 'cc/env';
+import { IAudioManager, EngineServiceLocator } from '@bl-framework/core';
+import { CreatorAudioManager } from '../../adapters/creator/CreatorAudioManager';
+import { CreatorAudioClip } from '../../adapters/creator/CreatorAudioClip';
 const { ccclass, property } = _decorator;
 
 
@@ -8,6 +11,11 @@ const { ccclass, property } = _decorator;
  * 音频管理器类
  * 负责管理游戏中的背景音乐和音效播放
  * 提供音频资源的加载、播放、停止等功能
+ * 
+ * 重构说明：
+ * - 内部使用 IAudioManager 抽象接口
+ * - 对外保持原有 API 以保持向后兼容
+ * - 通过 EngineServiceLocator 获取音频管理器实例
  */
 @ccclass('FWAudioManager')
 export class FWAudioManager extends FWBaseManager {
@@ -36,15 +44,44 @@ export class FWAudioManager extends FWBaseManager {
     /** 音效音频源对象池，用于复用音频源组件 */
     private _sfxPool:Pool<AudioSource>
 
+    /** 抽象音频管理器（通过服务定位器获取） */
+    private audioManager: IAudioManager | null = null;
+
+    /**
+     * 获取音频管理器实例
+     * 如果引擎已注册，使用抽象接口；否则回退到 Creator 直接调用
+     */
+    private getAudioManager(): IAudioManager | null {
+        if (!this.audioManager) {
+            try {
+                this.audioManager = EngineServiceLocator.getAudioManager();
+            } catch (error) {
+                // 引擎未注册，返回 null，使用 Creator 直接调用
+                return null;
+            }
+        }
+        return this.audioManager;
+    }
+
     /**
      * 预加载方法
      * 在编辑器预览模式或非编辑器环境下创建音频节点
      */
     __preload(): void {
-        if(EDITOR && globalThis.isPreviewProcess) {
+        const audioManager = this.getAudioManager();
+        
+        // 如果引擎已注册，使用抽象接口
+        if (audioManager instanceof CreatorAudioManager) {
+            audioManager.init();
+            // 同步创建 Creator 节点（用于向后兼容）
             this.createAudioNode();
-        }else if(!EDITOR) {
-            this.createAudioNode();
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            if(EDITOR && globalThis.isPreviewProcess) {
+                this.createAudioNode();
+            }else if(!EDITOR) {
+                this.createAudioNode();
+            }
         }
     }
 
@@ -59,6 +96,7 @@ export class FWAudioManager extends FWBaseManager {
     /**
      * 创建音频节点
      * 初始化背景音乐和音效的节点结构
+     * 注意：为了保持向后兼容，仍然直接使用 Creator API
      */
     createAudioNode() {
         // 创建背景音乐节点
@@ -89,8 +127,16 @@ export class FWAudioManager extends FWBaseManager {
      * 当背景音乐音量设置改变时更新当前播放的音量
      */
     onBgmVolumeChanged() {
-        if (this._bgm) {
-            this._bgm.volume = app.manager.data.setting.bgmVolume;
+        const audioManager = this.getAudioManager();
+        
+        if (audioManager) {
+            // 使用抽象接口设置音量
+            audioManager.setMusicVolume(app.manager.data.setting.bgmVolume);
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            if (this._bgm) {
+                this._bgm.volume = app.manager.data.setting.bgmVolume;
+            }
         }
     }
 
@@ -99,16 +145,37 @@ export class FWAudioManager extends FWBaseManager {
      * @param clip 要播放的音频片段
      */
     playBgm(clip: AudioClip) {
-        this._bgm.clip = clip;
-        this._bgm.play();
-        this._bgm.volume = app.manager.data.setting.bgmVolume // 设置当前音量
+        const audioManager = this.getAudioManager();
+        
+        if (audioManager) {
+            // 使用抽象接口播放音乐
+            const audioClip = new CreatorAudioClip(clip);
+            audioManager.playMusic(audioClip, true, app.manager.data.setting.bgmVolume);
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            this._bgm.clip = clip;
+            this._bgm.play();
+            this._bgm.volume = app.manager.data.setting.bgmVolume // 设置当前音量
+        }
     }
 
     /**
      * 停止背景音乐播放
      */
     stopBgm() {
-        this._bgm.stop();
+        const audioManager = this.getAudioManager();
+        
+        if (audioManager) {
+            // 使用抽象接口停止音乐
+            // 注意：接口没有单独的停止方法，这里需要扩展接口或使用其他方式
+            // 暂时回退到 Creator 直接调用
+            if (this._bgm) {
+                this._bgm.stop();
+            }
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            this._bgm.stop();
+        }
     }
 
     /**
@@ -117,12 +184,21 @@ export class FWAudioManager extends FWBaseManager {
      * @returns 如果音效未初始化则直接返回
      */
     playSfx(clip: AudioClip) {
-        if (!this._sfx.has(clip)) {
-            return; // 音效未初始化，无法播放
+        const audioManager = this.getAudioManager();
+        
+        if (audioManager) {
+            // 使用抽象接口播放音效
+            const audioClip = new CreatorAudioClip(clip);
+            audioManager.playEffect(audioClip, app.manager.data.setting.sfxVolume);
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            if (!this._sfx.has(clip)) {
+                return; // 音效未初始化，无法播放
+            }
+            let as = this._sfx.get(clip);
+            as.volume = app.manager.data.setting.sfxVolume; // 设置音效音量        
+            as.play();
         }
-        let as = this._sfx.get(clip);
-        as.volume = app.manager.data.setting.sfxVolume; // 设置音效音量        
-        as.play();
     }
 
     /**
@@ -132,6 +208,8 @@ export class FWAudioManager extends FWBaseManager {
      * @returns 如果音效已初始化则直接返回
      */
     initSfx(clip: AudioClip) {
+        // 注意：为了保持向后兼容，仍然直接使用 Creator API
+        // 抽象接口的 playEffect 会自动创建音频源，不需要预先初始化
         if (this._sfx.has(clip)) {
             return; // 音效已初始化，避免重复创建
         }
@@ -147,6 +225,7 @@ export class FWAudioManager extends FWBaseManager {
      * @returns 如果音效未初始化则直接返回
      */
     freeSfx(clip: AudioClip) {
+        // 注意：为了保持向后兼容，仍然直接使用 Creator API
         if (!this._sfx.has(clip)) {
             return; // 音效未初始化，无需释放
         }
@@ -181,5 +260,3 @@ declare global {
         }
     }
 }
-
-

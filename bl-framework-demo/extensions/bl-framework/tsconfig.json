@@ -9,5 +9,5 @@
             "@cocos/creator-types/engine"
         ]
     },
-    "exclude": ["./assets"]
+    "exclude": ["./assets", "assets/adapters"]
 }

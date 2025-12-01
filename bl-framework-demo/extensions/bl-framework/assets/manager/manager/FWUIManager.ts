@@ -6,12 +6,19 @@ import { FWUILoadingManager } from './FWUILoadingManager';
 import { FWUIDialogManager } from './FWUIDialogManager';
 import { IAssetConfig } from '../../declare/FWInterface';
 import { EDITOR } from 'cc/env';
+import { IUIManager, INode, EngineServiceLocator } from '@bl-framework/core';
+import { CreatorNode } from '../../adapters/creator/CreatorNode';
 const { ccclass, property } = _decorator;
 
 /**
  * UI管理器类
  * 负责管理整个UI系统，包括对话框、加载界面和UI根节点
  * 继承自FWBaseManager，实现单例模式
+ * 
+ * 重构说明：
+ * - 内部使用 IUIManager 抽象接口
+ * - 对外保持原有 API 以保持向后兼容
+ * - 通过 EngineServiceLocator 获取 UI 管理器实例
  */
 @ccclass('FWUIManager')
 export class FWUIManager extends FWBaseManager {
@@ -37,6 +44,25 @@ export class FWUIManager extends FWBaseManager {
 
     /** 加载界面管理器实例 */
     private _loadingManager: FWUILoadingManager = FWUILoadingManager.instance;
+
+    /** 抽象 UI 管理器（通过服务定位器获取） */
+    private uiManager: IUIManager | null = null;
+
+    /**
+     * 获取 UI 管理器实例
+     * 如果引擎已注册，使用抽象接口；否则回退到 Creator 直接调用
+     */
+    private getUIManager(): IUIManager | null {
+        if (!this.uiManager) {
+            try {
+                this.uiManager = EngineServiceLocator.getUIManager();
+            } catch (error) {
+                // 引擎未注册，返回 null，使用 Creator 直接调用
+                return null;
+            }
+        }
+        return this.uiManager;
+    }
 
     /**
      * 组件启动时调用
@@ -66,7 +92,16 @@ export class FWUIManager extends FWBaseManager {
      */
     changeUIRoot(uiRoot: FWUIRoot): void {
         // 发送UI根节点变更事件
-        app.manager.event.emit(app.manager.event.events.ON_UI_ROOT_CHANGED, uiRoot);
+        // 注意：为了保持向后兼容，仍然传递 Component，但事件系统已改为使用 INode
+        const uiManager = this.getUIManager();
+        if (uiManager) {
+            // 使用抽象接口获取根节点
+            const rootNode = uiManager.getRoot();
+            app.manager.event.emit(app.manager.event.events.ON_UI_ROOT_CHANGED, rootNode);
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            app.manager.event.emit(app.manager.event.events.ON_UI_ROOT_CHANGED, uiRoot);
+        }
         
         // 销毁旧的UI根节点
         let oldUIRoot = this.uiRoot;
@@ -92,17 +127,45 @@ export class FWUIManager extends FWBaseManager {
      * @returns 新创建的FWUIRoot实例
      */
     private createUIRoot() {
-        // 创建带有Widget组件的节点
-        let node = uiFunc.newNodeWidget("_UIRoot");
+        const uiManager = this.getUIManager();
         
-        // 添加2D渲染根组件
-        let root2D = node.addComponent(RenderRoot2D);
-        
-        // 添加UI根组件并初始化
-        let uiRoot = node.addComponent(FWUIRoot);
-        uiRoot.init();
-        
-        return uiRoot;
+        // 如果引擎已注册，使用抽象接口
+        if (uiManager) {
+            // 使用抽象接口创建节点
+            const rootNode = uiManager.createNode("_UIRoot");
+            
+            // 将抽象节点转换为 Creator 节点（用于向后兼容）
+            // 注意：FWUIRoot 仍然需要 Creator 的 Component 和 Node
+            let creatorNode: Node;
+            if (rootNode instanceof CreatorNode) {
+                creatorNode = rootNode.nativeNode;
+            } else {
+                // 如果返回的不是 CreatorNode，回退到 Creator 直接调用
+                creatorNode = uiFunc.newNodeWidget("_UIRoot");
+            }
+            
+            // 添加2D渲染根组件
+            let root2D = creatorNode.addComponent(RenderRoot2D);
+            
+            // 添加UI根组件并初始化
+            let uiRoot = creatorNode.addComponent(FWUIRoot);
+            uiRoot.init();
+            
+            return uiRoot;
+        } else {
+            // 回退到 Creator 直接调用（向后兼容）
+            // 创建带有Widget组件的节点
+            let node = uiFunc.newNodeWidget("_UIRoot");
+            
+            // 添加2D渲染根组件
+            let root2D = node.addComponent(RenderRoot2D);
+            
+            // 添加UI根组件并初始化
+            let uiRoot = node.addComponent(FWUIRoot);
+            uiRoot.init();
+            
+            return uiRoot;
+        }
     }
 
     /**
