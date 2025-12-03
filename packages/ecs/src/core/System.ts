@@ -1,21 +1,21 @@
-import { ISystem, SystemPriority, IWorld } from '../types';
+import { SystemPriority, World } from '../index';
 
 /**
  * 系统基类
  * 系统包含处理实体和组件的逻辑
  */
-export abstract class System implements ISystem {
+export abstract class System {
     /** 系统优先级 优先级数字越小越先执行，默认0*/
     priority: SystemPriority = 0;
 
     /** 所属World */
-    protected world!: IWorld;
+    protected world!: World;
 
     /** 系统是否启用 */
     protected _enabled: boolean = true;
 
     /** 设置World引用 */
-    setWorld(world: IWorld): void {
+    setWorld(world: World): void {
         this.world = world;
     }
 

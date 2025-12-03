@@ -1,10 +1,10 @@
-import { EntityId, IComponent } from '../types';
+import { EntityId } from '../index';
 
 /**
  * 组件基类
  * 组件只包含数据，不包含逻辑
  */
-export abstract class Component implements IComponent {
+export abstract class Component {
     /** 所属实体ID */
     entityId?: EntityId;
 

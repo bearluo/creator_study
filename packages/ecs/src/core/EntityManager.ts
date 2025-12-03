@@ -1,5 +1,5 @@
 import { Entity } from './Entity';
-import { EntityId } from '../types';
+import { EntityId } from '../index';
 
 /**
  * 实体管理器
@@ -13,7 +13,7 @@ export class EntityManager {
     private nextEntityId: EntityId = 1;
 
     /** 待回收的实体ID队列 */
-    private recycledIds: EntityId[] = [];
+    // private recycledIds: EntityId[] = [];
 
     /** 实体对象池 */
     private entityPool: Entity[] = [];
@@ -36,9 +36,10 @@ export class EntityManager {
     createEntity(name?: string): Entity {
         // 优先使用回收的ID
         const id =
-            this.recycledIds.length > 0
-                ? this.recycledIds.pop()!
-                : this.nextEntityId++;
+            // this.recycledIds.length > 0
+            //     ? this.recycledIds.pop()!
+            //     : 
+            this.nextEntityId++;
 
         // 从对象池获取实体
         let entity: Entity;
@@ -85,7 +86,7 @@ export class EntityManager {
         this.entities.delete(entityId);
 
         // 回收ID
-        this.recycledIds.push(entityId);
+        // this.recycledIds.push(entityId);
 
         // 归还到对象池
         if (this.entityPool.length < this.poolSize) {
@@ -129,7 +130,7 @@ export class EntityManager {
         }
 
         this.entities.clear();
-        this.recycledIds = [];
+        // this.recycledIds = [];
     }
 
     /**

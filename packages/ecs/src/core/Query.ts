@@ -1,4 +1,4 @@
-import { ComponentType, ComponentTypeId, EntityId, QueryConfig } from '../types';
+import { ComponentType, ComponentTypeId, EntityId, QueryConfig } from '../index';
 import { ComponentManager } from './ComponentManager';
 import { Entity } from './Entity';
 import { EntityManager } from './EntityManager';

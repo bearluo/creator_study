@@ -1,5 +1,5 @@
 import { Component } from './Component';
-import { ComponentType, ComponentTypeId, EntityId, IComponent } from '../types';
+import { ComponentType, ComponentTypeId, EntityId } from '../index';
 import { ComponentPool } from '../utils/ComponentPool';
 import { BitSet } from '../utils/BitSet';
 import { getComponentMetadata } from '../decorators/component';
@@ -16,7 +16,7 @@ export class ComponentManager {
     private nextTypeId: ComponentTypeId = 0;
 
     /** 实体的组件存储 [EntityId -> [ComponentTypeId -> Component]] */
-    private entityComponents: Map<EntityId, Map<ComponentTypeId, IComponent>> =
+    private entityComponents: Map<EntityId, Map<ComponentTypeId, Component>> =
         new Map();
 
     /** 实体的组件位集合 [EntityId -> BitSet] */
@@ -124,7 +124,7 @@ export class ComponentManager {
     /**
      * 获取实体的组件
      */
-    getComponent<T extends IComponent>(
+    getComponent<T extends Component>(
         entityId: EntityId,
         componentType: ComponentType<T>
     ): T | undefined {

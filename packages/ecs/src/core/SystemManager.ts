@@ -1,5 +1,5 @@
 import { System } from './System';
-import { IWorld } from '../types';
+import { World } from '../index';
 
 /**
  * 系统管理器
@@ -13,9 +13,9 @@ export class SystemManager {
     private systemTypes: Map<new () => System, System> = new Map();
 
     /** 所属World */
-    private world: IWorld;
+    private world: World;
 
-    constructor(world: IWorld) {
+    constructor(world: World) {
         this.world = world;
     }
 
@@ -63,7 +63,7 @@ export class SystemManager {
         system.onDestroy?.();
 
         // 从列表移除
-        const index = this.systems.indexOf(system);
+        const index = this.systems.indexOf(system as System);
         if (index !== -1) {
             this.systems.splice(index, 1);
         }

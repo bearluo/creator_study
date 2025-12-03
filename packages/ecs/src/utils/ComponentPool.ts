@@ -1,5 +1,5 @@
 import { Component } from '../core/Component';
-import { ComponentType } from '../types';
+import { ComponentType } from '../index';
 
 /**
  * 组件对象池

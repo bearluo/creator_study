@@ -5,13 +5,13 @@ import { EntityManager } from './EntityManager';
 import { Query } from './Query';
 import { System } from './System';
 import { SystemManager } from './SystemManager';
-import { ComponentType, EntityId, IComponent, IWorld, QueryConfig, WorldConfig } from '../types';
+import { ComponentType, EntityId, QueryConfig, WorldConfig } from '../index';
 
 /**
  * ECS World
  * ECS框架的核心，管理所有实体、组件和系统
  */
-export class World implements IWorld {
+export class World {
     /** 实体管理器 */
     private entityManager: EntityManager;
 
@@ -111,7 +111,7 @@ export class World implements IWorld {
     /**
      * 为实体添加组件
      */
-    addComponent<T extends IComponent>(
+    addComponent<T extends Component>(
         entityId: EntityId,
         componentType: ComponentType<T>
     ): T {
@@ -133,7 +133,7 @@ export class World implements IWorld {
     /**
      * 获取实体的组件
      */
-    getComponent<T extends IComponent>(
+    getComponent<T extends Component>(
         entityId: EntityId,
         componentType: ComponentType<T>
     ): T | undefined {

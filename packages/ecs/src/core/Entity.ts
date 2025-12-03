@@ -1,10 +1,10 @@
-import { ComponentType, EntityId, IComponent, IEntity, IWorld } from '../types';
+import { ComponentType, EntityId, Component, World } from '../index';
 
 /**
  * 实体类
  * 实体是一个唯一的标识符，可以附加多个组件
  */
-export class Entity implements IEntity {
+export class Entity {
     /** 实体唯一ID */
     private _id: EntityId;
 
@@ -15,7 +15,7 @@ export class Entity implements IEntity {
     public name: string = '';
 
     /** 所属世界 */
-    public world!: IWorld;
+    public world!: World;
 
     constructor(id: EntityId) {
         this._id = id;
@@ -58,15 +58,15 @@ export class Entity implements IEntity {
         this.name = '';
     }
 
-    getComponent<T extends IComponent>(componentType: ComponentType<T>): T | undefined {
+    getComponent<T extends Component>(componentType: ComponentType<T>): T | undefined {
         return this.world?.getComponent<T>(this._id, componentType);
     }
 
-    addComponent<T extends IComponent>(componentType: ComponentType<T>): T {
+    addComponent<T extends Component>(componentType: ComponentType<T>): T {
         return this.world?.addComponent<T>(this._id, componentType);
     }
 
-    getOrCreateComponent<T extends IComponent>(componentType: ComponentType<T>): T {
+    getOrCreateComponent<T extends Component>(componentType: ComponentType<T>): T {
         return this.world?.getComponent<T>(this._id, componentType) ?? this.addComponent<T>(componentType);
     }
 }
