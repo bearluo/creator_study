@@ -5,7 +5,7 @@ import { EntityManager } from './EntityManager';
 import { Query } from './Query';
 import { System } from './System';
 import { SystemManager } from './SystemManager';
-import { ComponentType, EntityId, QueryConfig, WorldConfig } from '../index';
+import { ComponentType, EntityId, QueryConfig, WorldConfig, Handle } from '../index';
 
 /**
  * ECS World
@@ -97,6 +97,35 @@ export class World {
      */
     getEntity(entityId: EntityId): Entity | undefined {
         return this.entityManager.getEntity(entityId);
+    }
+
+    /**
+     * 创建实体句柄
+     * 推荐在异步操作前调用，保存 Handle 而不是 Entity 对象引用
+     * @param entityId 实体ID
+     * @returns 实体句柄
+     */
+    createHandle(entityId: EntityId): Handle | undefined {
+        return this.entityManager.createHandle(entityId);
+    }
+
+    /**
+     * 通过句柄获取实体（带有效性验证）
+     * 推荐在异步操作后使用此方法验证实体是否仍然有效
+     * @param handle 实体句柄
+     * @returns 如果实体存在且有效则返回实体，否则返回 undefined
+     */
+    getEntityByHandle(handle: Handle): Entity | undefined {
+        return this.entityManager.getEntityByHandle(handle);
+    }
+
+    /**
+     * 验证句柄是否有效
+     * @param handle 实体句柄
+     * @returns 如果实体存在且 Generation 匹配返回 true
+     */
+    isValidHandle(handle: Handle): boolean {
+        return this.entityManager.isValidHandle(handle);
     }
 
     /**

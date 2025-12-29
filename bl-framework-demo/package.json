@@ -9,6 +9,9 @@
     "@bl-framework/ecs": "^1.0.0",
     "@bl-framework/behaviortree": "^1.0.0",
     "@bl-framework/behaviortree-ecs": "^1.0.0",
+    "@bl-framework/mvvm": "^1.0.0",
+    "@bl-framework/mvvm-creator": "^1.0.0",
+    "@bl-framework/fsm": "^1.0.0",
     "crypto-es": "^2.1.0",
     "long": "^5.3.2"
   }

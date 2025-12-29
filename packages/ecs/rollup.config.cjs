@@ -21,7 +21,8 @@ module.exports = {
             declaration: true,
             declarationDir: './dist',
             declarationMap: true,
-            sourceMap: true
+            sourceMap: true,
+            rootDir: './src'
         })
     ],
     external: []

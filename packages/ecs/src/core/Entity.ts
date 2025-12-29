@@ -1,4 +1,4 @@
-import { ComponentType, EntityId, Component, World } from '../index';
+import { ComponentType, EntityId, Component, World, Handle } from '../index';
 
 /**
  * 实体类
@@ -24,6 +24,33 @@ export class Entity {
     /** 获取实体ID */
     get id(): EntityId {
         return this._id;
+    }
+
+    /**
+     * 获取实体句柄（用于异步操作）
+     * 
+     * ⚠️ 重要：在异步操作中，应该保存 Handle 而不是 Entity 对象引用
+     * 
+     * @example
+     * ```typescript
+     * const entity = world.createEntity();
+     * const handle = entity.handle; // 保存 Handle
+     * 
+     * await someAsyncOperation();
+     * 
+     * const currentEntity = world.getEntityByHandle(handle);
+     * if (currentEntity) {
+     *     // 实体仍然有效
+     * }
+     * ```
+     * 
+     * @returns 实体句柄，如果实体无效（无 world 或已销毁）返回 undefined
+     */
+    get handle(): Handle | undefined {
+        if (!this.world) {
+            return undefined;
+        }
+        return this.world.createHandle(this._id);
     }
 
     /** 获取激活状态 */

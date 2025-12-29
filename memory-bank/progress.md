@@ -1,5 +1,52 @@
 # 进度跟踪
 
+## 已完成任务归档
+
+### 任务：Core 模块 Promise 扩展支持 (CORE-PROMISE-001)
+
+**开始时间**: 2025-01-XX  
+**完成时间**: 2025-01-XX  
+**状态**: ✅ COMPLETED & ARCHIVED  
+**归档文档**: `memory-bank/archive/archive-core-promise-001.md`
+
+**完成情况**:
+- ✅ VAN 分析完成
+- ✅ PLAN 计划完成
+- ✅ CREATIVE 设计完成
+- ✅ BUILD 实现完成
+- ✅ REFLECT 反思完成
+- ✅ ARCHIVE 归档完成
+
+**核心成果**:
+- withTimeout、CancelToken、delay 实现
+- 完整文档和示例
+- 向后兼容性 100%
+
+---
+
+### 任务：ECS 实体异步安全改进 (ECS-ASYNC-001)
+
+**开始时间**: 2025-01-XX  
+**完成时间**: 2025-01-XX  
+**状态**: ✅ COMPLETED & ARCHIVED  
+**归档文档**: `memory-bank/archive/archive-ecs-async-001.md`
+
+**完成情况**:
+- ✅ VAN 分析完成
+- ✅ PLAN 计划完成
+- ✅ CREATIVE 设计完成
+- ✅ BUILD 实现完成
+- ✅ REFLECT 反思完成
+- ✅ ARCHIVE 归档完成
+
+**核心成果**:
+- Entity.handle getter 实现
+- 辅助函数实现
+- 完整文档和示例
+- 向后兼容性 100%
+
+---
+
 ## 当前任务进度
 
 ### 任务：接入行为树系统

@@ -1,0 +1,3 @@
+[submodule "bl-framework-demo/extensions/bl-framework"]
+	path = bl-framework-demo/extensions/bl-framework
+	url = https://github.com/bearluo/bl-framework.git

@@ -10,3 +10,6 @@ export * from './common';
 // Event system
 export * from './events';
 
+// Promise extensions
+export * from './promise';
+

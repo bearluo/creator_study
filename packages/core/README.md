@@ -26,6 +26,61 @@ const ext = FWPath.getExtension('logo.png');
 // 结果: '.png'
 ```
 
+### Promise 扩展
+
+#### withTimeout - Promise 超时控制
+
+```typescript
+import { withTimeout, TimeoutError } from '@bl-framework/core';
+
+// 基础用法
+const data = await withTimeout(fetchData(), 5000);
+
+// 自定义错误消息
+try {
+    const data = await withTimeout(fetchData(), 5000, '请求超时，请重试');
+} catch (error) {
+    if (error instanceof TimeoutError) {
+        console.log('操作超时');
+    }
+}
+```
+
+#### CancelToken - Promise 取消机制
+
+```typescript
+import { createCancelToken, CancellationError } from '@bl-framework/core';
+
+const { token, cancel } = createCancelToken();
+
+// 在异步操作中使用
+const promise = async function(token) {
+    return new Promise((resolve, reject) => {
+        token.onCancel((reason) => {
+            reject(new CancellationError(reason));
+        });
+        
+        // 执行异步操作
+        setTimeout(() => resolve('完成'), 5000);
+    });
+}(token);
+
+// 取消操作
+setTimeout(() => cancel('用户取消'), 2000);
+```
+
+#### delay - 延迟 Promise
+
+```typescript
+import { delay } from '@bl-framework/core';
+
+// 延迟 1 秒
+await delay(1000);
+
+// 延迟后返回指定值
+const result = await delay(1000, 'Hello'); // 'Hello'
+```
+
 ### 事件系统
 
 #### FWEventDispatcher - 事件分发器
@@ -188,6 +243,35 @@ class MyClass {
 #### `removeAllListeners(event?: keyof TEventMap): void`
 移除所有监听器。
 
+### Promise 扩展
+
+#### `withTimeout<T>(promise: Promise<T>, ms: number, message?: string): Promise<T>`
+为 Promise 添加超时控制。如果 Promise 在指定时间内未完成，将自动 reject 并抛出 `TimeoutError`。
+
+#### `createCancelToken(): { token: CancelToken; cancel: (reason?: any) => void }`
+创建取消令牌。返回一个包含 `token` 和 `cancel` 函数的对象。
+
+#### `CancelToken`
+取消令牌类。
+
+- `cancelled: boolean` - 是否已取消
+- `reason: any` - 取消原因
+- `onCancel(callback: (reason?: any) => void): void` - 注册取消回调
+
+#### `delay(ms: number): Promise<void>`
+延迟指定时间后 resolve。
+
+#### `delay<T>(ms: number, value: T): Promise<T>`
+延迟指定时间后 resolve 指定值。
+
+#### `TimeoutError`
+超时错误类，继承自 `Error`。
+
+#### `CancellationError`
+取消错误类，继承自 `Error`。
+
+- `reason: any` - 取消原因
+
 ## 类型定义
 
 ### EventMap
@@ -221,6 +305,12 @@ type MyEventName = EventName<MyEvents>; // 'user:login'
 
 ## 版本
 
+- **1.1.0** - Promise 扩展功能
+  - ✅ withTimeout - Promise 超时控制
+  - ✅ CancelToken - Promise 取消机制
+  - ✅ delay - 延迟 Promise
+  - ✅ TimeoutError、CancellationError 错误类型
+
 - **1.0.0** - 初始版本
   - ✅ FWPath 路径工具
   - ✅ FWEventDispatcher 事件分发器
@@ -242,7 +332,10 @@ import {
     setLogConfig, 
     LogLevel,
     FWEventDispatcher,
-    EventMap
+    EventMap,
+    withTimeout,
+    createCancelToken,
+    delay
 } from '@bl-framework/core';
 
 // 路径工具
@@ -262,6 +355,11 @@ dispatcher.on('user:login', (userId) => {
     console.log('User logged in:', userId);
 });
 dispatcher.emit('user:login', 'user123');
+
+// Promise 扩展
+const data = await withTimeout(fetchData(), 5000);
+const { token, cancel } = createCancelToken();
+await delay(1000);
 ```
 
 ## 许可证

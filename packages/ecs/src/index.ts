@@ -11,6 +11,15 @@
 /** 实体ID类型 */
 export type EntityId = number;
 
+/** 实体代数（Generation）类型 */
+export type Gen = number;
+
+/** 实体句柄（用于异步操作验证） */
+export interface Handle {
+    id: EntityId;
+    gen: Gen;
+}
+
 /** 组件类型 */
 export type ComponentType<T = any> = new (...args: any[]) => T;
 
@@ -77,6 +86,14 @@ export type { SystemDecoratorConfig } from './decorators/system';
 export { ComponentPool } from './utils/ComponentPool';
 export { BitSet } from './utils/BitSet';
 
+// ==================== 辅助函数 ====================
+
+export {
+    createEntityHandle,
+    getEntityByHandle,
+    isValidHandle,
+} from './utils/entityHandle';
+
 // ==================== 命名空间导出 ====================
 
 // 将所有导出打包成一个对象
@@ -92,6 +109,7 @@ import { component, getComponentMetadata } from './decorators/component';
 import { system, getSystemMetadata } from './decorators/system';
 import { ComponentPool } from './utils/ComponentPool';
 import { BitSet } from './utils/BitSet';
+import { createEntityHandle, getEntityByHandle, isValidHandle } from './utils/entityHandle';
 
 /**
  * ECS 命名空间对象
@@ -117,6 +135,11 @@ export const ECS = {
     // 工具类
     ComponentPool,
     BitSet,
+    
+    // 辅助函数
+    createEntityHandle,
+    getEntityByHandle,
+    isValidHandle,
 } as const;
 
 // 默认导出 ECS 对象

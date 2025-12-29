@@ -1,0 +1,48 @@
+{
+  "name": "@bl-framework/mvvm-creator",
+  "version": "1.0.0",
+  "description": "bl-framework MVVM framework integration for Cocos Creator",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rollup -c rollup.config.cjs",
+    "watch": "tsc -w",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "bl-framework",
+    "mvvm",
+    "cocos-creator",
+    "model-view-viewmodel",
+    "reactive",
+    "data-binding"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@bl-framework/mvvm": "^1.0.0"
+  },
+  "devDependencies": {
+    "@cocos/creator-types": "^3.8.7",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@types/node": "^18.0.0",
+    "rollup": "^4.0.0",
+    "tslib": "^2.6.0",
+    "typescript": "^5.0.0"
+  }
+}
