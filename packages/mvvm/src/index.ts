@@ -17,7 +17,11 @@ export type {
     IView,
     IModel,
     IViewModel,
-    BindingOptions
+    BindingOptions,
+    Path,
+    PathValue,
+    BatchBindingItem,
+    BindingConfig
 } from './core/types';
 
 export type { Watcher as IWatcher } from './core/types';
@@ -26,7 +30,9 @@ export type { DataBinding as IDataBinding } from './core/types';
 export {
     MVVMError,
     BindingError,
-    ReactiveError
+    ReactiveError,
+    ValidationError,
+    PathError
 } from './core/types';
 
 // ==================== 响应式模块 ====================

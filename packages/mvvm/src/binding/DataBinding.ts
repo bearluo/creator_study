@@ -2,7 +2,7 @@ import type { IReactive, IView, BindingOptions } from '../core/types';
 import type { DataBinding as IDataBinding } from '../core/types';
 import { Reactive } from '../reactive/Reactive';
 import { Watcher } from '../reactive/Watcher';
-import { BindingError } from '../core/types';
+import { BindingError, ValidationError } from '../core/types';
 
 /**
  * 数据绑定
@@ -42,7 +42,7 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
     private reactive: Reactive<TData>;
     private view: IView;
     private path: string;
-    private options: Required<BindingOptions<TValue, TViewValue>>;
+    private options: Required<Omit<BindingOptions<TValue, TViewValue>, 'onError'>> & { onError?: BindingOptions<TValue, TViewValue>['onError'] };
     private watcher: Watcher | null = null;
     private unsubscribe?: () => void;
     private viewUnsubscribe?: () => void;
@@ -63,6 +63,7 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
             converter: options?.converter || ((v: TValue) => v as unknown as TViewValue),
             reverseConverter: options?.reverseConverter || ((v: TViewValue) => v as unknown as TValue),
             validator: options?.validator || (() => true),
+            ...(options?.onError && { onError: options.onError }),
         };
         
         this._setupBinding();
@@ -113,21 +114,43 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
      */
     private _updateView(value: any): void {
         if (this.options.mode === 'one-way-to-source') return;
-        // 验证
-        if (this.options.validator && !this.options.validator(value)) {
-            throw new BindingError(`Validation failed for path: ${this.path}`);
-        }
         
-        // 转换
-        const convertedValue = this.options.converter(value);
-        
-        this.syncingToView = true;
-
-        // 更新视图
         try {
-            this.view.update(this.path, convertedValue);
-        } finally {
-            this.syncingToView = false;
+            // 验证
+            if (this.options.validator && !this.options.validator(value)) {
+                const error = new ValidationError(
+                    `Validation failed for path: ${this.path}`,
+                    this.path,
+                    value
+                );
+                if (this.options.onError) {
+                    this.options.onError(error, this.path, value);
+                    return;
+                }
+                throw error;
+            }
+            
+            // 转换
+            const convertedValue = this.options.converter(value);
+            
+            this.syncingToView = true;
+
+            // 更新视图
+            try {
+                this.view.update(this.path, convertedValue);
+            } finally {
+                this.syncingToView = false;
+            }
+        } catch (error) {
+            if (this.options.onError) {
+                this.options.onError(
+                    error instanceof Error ? error : new Error(String(error)),
+                    this.path,
+                    value
+                );
+            } else {
+                throw error;
+            }
         }
     }
     
@@ -137,22 +160,38 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
     private _updateSource(value: any): void {
         if (this.options.mode === 'one-way') return;
 
-        // 反向转换
-        const convertedValue = this.options.reverseConverter(value);
-        
-        // 验证
-        if (this.options.validator && !this.options.validator(convertedValue)) {
-            throw new BindingError(`Validation failed for path: ${this.path}`);
-        }
-
-        
-        this.syncingToSource = true;
-        
-        // 更新响应式数据
         try {
-            this._setValue(this.reactive.value, this.path, convertedValue);
-        } finally {
-            this.syncingToSource = false;
+            // 反向转换
+            const convertedValue = this.options.reverseConverter(value);
+            
+            // 验证
+            if (this.options.validator && !this.options.validator(convertedValue)) {
+                const error = new ValidationError(
+                    `Validation failed for path: ${this.path}`,
+                    this.path,
+                    convertedValue
+                );
+                if (this.options.onError) {
+                    this.options.onError(error, this.path, value);
+                    return;
+                }
+                throw error;
+            }
+
+            this.syncingToSource = true;
+            
+            // 更新响应式数据
+            try {
+                this._setValue(this.reactive.value, this.path, convertedValue);
+            } finally {
+                this.syncingToSource = false;
+            }
+        } catch (error) {
+            if (this.options.onError) {
+                this.options.onError(error instanceof Error ? error : new Error(String(error)), this.path, value);
+            } else {
+                throw error;
+            }
         }
     }
     

@@ -66,7 +66,7 @@ graph TD
     
     %% Mode Transition
     CheckCreative -->|"Yes"| RecCreative["NEXT MODE:<br>CREATIVE MODE"]
-    CheckCreative -->|"No"| RecImplement["NEXT MODE:<br>IMPLEMENT MODE"]
+    CheckCreative -->|"No"| RecBuild["NEXT MODE:<br>BUILD MODE"]
     
     %% Style for Technology Gate
     style TechGate fill:#ff5555,stroke:#dd3333,color:white,stroke-width:3px
@@ -272,4 +272,4 @@ When planning is complete, notify user with:
 ✅ Challenges and mitigations documented
 [✅ Creative phases identified (for Level 3-4)]
 
-→ NEXT RECOMMENDED MODE: [CREATIVE/IMPLEMENT] MODE 
+→ NEXT RECOMMENDED MODE: [CREATIVE/BUILD] MODE 

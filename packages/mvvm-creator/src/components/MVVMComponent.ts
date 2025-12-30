@@ -116,7 +116,7 @@ export abstract class MVVMComponent<T = any> extends Component {
     protected componentAdapter?: CocosComponentAdapter;
     
     /** 绑定构建器 */
-    protected bindingBuilder!: BindingBuilder;
+    protected bindingBuilder!: BindingBuilder<T>;
     
     /**
      * 初始化 ViewModel
@@ -175,8 +175,8 @@ export abstract class MVVMComponent<T = any> extends Component {
         // 创建视图适配器
         this.viewAdapter = this.createViewAdapter();
         
-        // 创建绑定构建器（传入组件实例用于解析属性）
-        this.bindingBuilder = new BindingBuilder(this.viewModel, this.node, this.viewAdapter, this);
+        // 创建绑定构建器（传入组件实例用于解析属性，传递类型信息）
+        this.bindingBuilder = new BindingBuilder<T>(this.viewModel, this.node, this.viewAdapter, this);
         
         // 处理装饰器绑定（统一使用 BindingBuilder）
         this.processDecoratorBindings();

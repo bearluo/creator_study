@@ -55,7 +55,7 @@ const optimizationRegistry = {
     priority: 1
   },
   adaptiveComplexityModel: {
-    file: "main-optimized.mdc",
+    file: "main.mdc",
     dependencies: ["hierarchicalRuleLoading"],
     priority: 2
   },
@@ -271,9 +271,9 @@ function initializeMemoryBankOptimizations() {
 ## 🔄 MODE TRANSITION EXAMPLE
 
 ```markdown
-// Optimized mode transition from CREATIVE to IMPLEMENT
+// Optimized mode transition from CREATIVE to BUILD
 
-# MODE TRANSITION: CREATIVE → IMPLEMENT
+# MODE TRANSITION: CREATIVE → BUILD
 
 ## Context Summary
 - Task: Authentication system implementation
@@ -291,7 +291,7 @@ function initializeMemoryBankOptimizations() {
 3. Build refresh token handling
 
 // Transition happens with preserved context
-// IMPLEMENT mode continues with this context available
+// BUILD mode continues with this context available
 ```
 
 ## 🔄 HIERARCHICAL RULE LOADING EXAMPLE

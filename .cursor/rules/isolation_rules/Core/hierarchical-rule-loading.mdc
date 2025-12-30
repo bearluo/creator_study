@@ -24,7 +24,7 @@ graph TD
     Mode --> VAN["VAN Mode<br>Rules"]
     Mode --> PLAN["PLAN Mode<br>Rules"]
     Mode --> CREATIVE["CREATIVE Mode<br>Rules"]
-    Mode --> IMPLEMENT["IMPLEMENT Mode<br>Rules"]
+    Mode --> BUILD["BUILD Mode<br>Rules"]
     Mode --> REFLECT["REFLECT Mode<br>Rules"]
     
     Level --> Level1["Level 1<br>Rules"]
@@ -132,7 +132,7 @@ class RuleLoadManager {
       this.lazyLoaders["architecture"] = () => this.loadRule("creative-phase-architecture.mdc");
       this.lazyLoaders["algorithm"] = () => this.loadRule("creative-phase-algorithm.mdc");
       this.lazyLoaders["uiux"] = () => this.loadRule("creative-phase-uiux.mdc");
-    } else if (modeName === "IMPLEMENT") {
+    } else if (modeName === "BUILD") {
       this.lazyLoaders["testing"] = () => this.loadRule("implementation-testing.mdc");
       this.lazyLoaders["deployment"] = () => this.loadRule("implementation-deployment.mdc");
     }
@@ -174,9 +174,9 @@ graph TD
         CreativeSpecialized --> CUIUX["creative-phase-uiux.mdc"]
     end
     
-    subgraph "IMPLEMENT Mode"
-        ImplementMap["implement-mode-map.mdc"] --> Impl1["implementation-guide.mdc"]
-        ImplementMap --> Impl2["testing-strategy.mdc"]
+    subgraph "BUILD Mode"
+        BuildMap["build-mode-map.mdc"] --> Impl1["implementation-guide.mdc"]
+        BuildMap --> Impl2["testing-strategy.mdc"]
     end
 ```
 
@@ -211,11 +211,11 @@ graph TD
 - creative-phase-uiux.mdc (Specialized)
 ```
 
-### IMPLEMENT Mode Essential Rules
+### BUILD Mode Essential Rules
 ```markdown
 - main.mdc (Core)
 - command-execution.mdc (Core)
-- implement-mode-map.mdc (Mode)
+- build-mode-map.mdc (Mode)
 ```
 
 ## 🚀 IMPLEMENTATION BENEFITS

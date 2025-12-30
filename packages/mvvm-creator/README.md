@@ -52,39 +52,61 @@ export class MyComponent extends MVVMComponent {
 - ✅ 代码更简洁，无需占位符属性
 - ✅ 向后兼容：仍支持 `target` 选项用于占位符方式
 
-### 方式 2: 使用构建器（灵活，适合动态场景）
+### 方式 2: 使用构建器（灵活，适合动态场景，类型安全）
 
 ```typescript
 import { _decorator, Component, Label, Button } from 'cc';
-import { Model } from '@bl-framework/mvvm';
+import { Model, ViewModel, ValidationError } from '@bl-framework/mvvm';
 import { MVVMComponent } from '@bl-framework/mvvm-creator';
 
 const { ccclass, property } = _decorator;
 
+// 定义数据类型（类型安全）
+interface MyData {
+    title: string;
+    count: number;
+}
+
 @ccclass('MyComponent')
-export class MyComponent extends MVVMComponent {
+export class MyComponent extends MVVMComponent<MyData> {
     @property(Label)
     titleLabel: Label | null = null;
     
     @property(Button)
     actionButton: Button | null = null;
     
-    protected initViewModel(model: Model): any {
-        const { ViewModel } = require('@bl-framework/mvvm');
+    protected initViewModel(model: Model<MyData>): ViewModel<MyData> {
         return new ViewModel(model);
     }
     
-    protected createModel(): Model {
-        const { Model } = require('@bl-framework/mvvm');
-        return new Model({ title: 'Hello World' });
+    protected createModel(): Model<MyData> {
+        return new Model<MyData>({ 
+            title: 'Hello World',
+            count: 0
+        });
     }
     
     protected onMVVMLoad(): void {
-        // 使用构建器模式
+        // 使用类型安全的构建器模式
         this.bindingBuilder
-            .bind('title', this.titleLabel, 'string')
+            .bind('title', this.titleLabel, 'string', {
+                converter: (v) => `Title: ${v}`  // ✅ v: string（自动推断）
+            })
+            .bind('count', this.titleLabel, 'string', {
+                converter: (v) => `Count: ${v}`,  // ✅ v: number（自动推断）
+                validator: (v) => v >= 0,
+                onError: (error, path, value) => {
+                    if (error instanceof ValidationError) {
+                        console.error(`验证失败: ${path} = ${value}`, error.message);
+                    }
+                }
+            })
             .on('click', this.actionButton, this.onAction.bind(this))
             .build();
+        
+        // ❌ 类型错误示例（编译时检查）
+        // this.bindingBuilder.bind('titl', this.titleLabel);        // ❌ TypeScript 错误
+        // this.bindingBuilder.bind('count.name', this.titleLabel);   // ❌ TypeScript 错误
     }
     
     onAction(): void {
@@ -251,25 +273,57 @@ export class ItemList extends MVVMComponent {
 
 #### BindingBuilder
 
-提供流畅的 API 来构建数据绑定、事件绑定等。
+提供类型安全的流畅 API 来构建数据绑定、事件绑定等。
 
 ```typescript
+// 定义数据类型（类型安全）
+interface PlayerData {
+    name: string;
+    level: number;
+    showInfo: boolean;
+}
+
 @ccclass('PlayerInfo')
-export class PlayerInfo extends MVVMComponent {
+export class PlayerInfo extends MVVMComponent<PlayerData> {
     @property(Label)
     nameLabel: Label | null = null;
+    
+    @property(Label)
+    levelLabel: Label | null = null;
     
     @property(Button)
     levelUpButton: Button | null = null;
     
+    @property(Node)
+    infoPanel: Node | null = null;
+    
     protected onMVVMLoad(): void {
-        // 使用构建器模式
+        // 使用类型安全的构建器模式
         this.bindingBuilder
-            .bind('name', this.nameLabel, 'string')
-            .bind('level', this.levelLabel, 'string', { converter: (v) => `Lv.${v}` })
+            .bind('name', this.nameLabel, 'string')  // ✅ 类型安全
+            .bind('level', this.levelLabel, 'string', { 
+                converter: (v) => `Lv.${v}`  // ✅ v: number（自动推断）
+            })
             .on('click', this.levelUpButton, this.onLevelUp.bind(this))
             .if('showInfo', this.infoPanel)
             .build();
+        
+        // 或者使用批量绑定方法
+        this.bindingBuilder.bindMany({
+            name: {
+                target: this.nameLabel,
+                property: 'string',
+                options: { mode: 'one-way' }
+            },
+            level: {
+                target: this.levelLabel,
+                property: 'string',
+                options: { 
+                    mode: 'one-way',
+                    converter: (v) => `Lv.${v}`  // ✅ v: number（自动推断）
+                }
+            }
+        }).build();
     }
 }
 ```
@@ -489,10 +543,17 @@ reactive.value.title = 'World'; // Label 的 string 属性自动更新
 绑定构建器类。
 
 **方法**:
-- `bind(path, target, property?, options?)`: 添加数据绑定
+- `bind<P extends Path<T> & string>(path: P, target, property?, options?)`: 添加类型安全的数据绑定
+- `bindMany<P extends Path<T> & string>(bindings)`: 批量添加类型安全的数据绑定
 - `on(event, target, handler)`: 添加事件绑定
 - `if(path, target)`: 添加条件渲染
-- `build()`: 构建所有绑定
+- `build()`: 构建所有绑定（使用批量绑定 API）
+
+**类型安全特性**:
+- ✅ IDE 自动补全：路径自动提示
+- ✅ 编译时类型检查：无效路径会在编译时报错
+- ✅ 类型推断：转换器和验证器的参数类型自动推断
+- ✅ 错误处理：支持 `onError` 回调处理绑定错误
 
 ## 组件 API
 

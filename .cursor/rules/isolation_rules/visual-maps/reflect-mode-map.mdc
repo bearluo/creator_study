@@ -16,7 +16,7 @@ graph TD
     
     %% Initial Assessment
     ReadTasks --> VerifyImplement{"Implementation<br>Complete?"}
-    VerifyImplement -->|"No"| ReturnImplement["Return to<br>IMPLEMENT Mode"]
+    VerifyImplement -->|"No"| ReturnBuild["Return to<br>BUILD Mode"]
     VerifyImplement -->|"Yes"| AssessLevel{"Determine<br>Complexity Level"}
     
     %% Level-Based Reflection
@@ -80,7 +80,7 @@ Before reflection can begin, verify file state:
 graph TD
     Start["File State<br>Verification"] --> CheckTasks{"tasks.md has<br>implementation<br>complete?"}
     
-    CheckTasks -->|"No"| ErrorImplement["ERROR:<br>Return to IMPLEMENT Mode"]
+    CheckTasks -->|"No"| ErrorBuild["ERROR:<br>Return to BUILD Mode"]
     CheckTasks -->|"Yes"| CheckProgress{"progress.md<br>has implementation<br>details?"}
     
     CheckProgress -->|"No"| ErrorProgress["ERROR:<br>Update progress.md first"]

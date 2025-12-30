@@ -3,6 +3,83 @@
  */
 
 /**
+ * 路径类型工具
+ * 
+ * 递归路径类型，支持嵌套对象和数组路径
+ * 
+ * @template T 数据类型
+ * @template Prefix 路径前缀（内部使用）
+ * 
+ * @example
+ * ```typescript
+ * interface PlayerData {
+ *     name: string;
+ *     stats: { health: number; level: number };
+ *     items: Array<{ id: string; name: string }>;
+ * }
+ * 
+ * type Paths = Path<PlayerData>;
+ * // 'name' | 'stats' | 'stats.health' | 'stats.level' | 'items' | 'items.0' | 'items.0.id' | 'items.0.name'
+ * ```
+ */
+export type Path<T, Prefix extends string = ''> = T extends object
+    ? {
+          [K in keyof T]: K extends string | number
+              ? T[K] extends Array<infer U>
+                  ? // 数组类型：支持数组本身、索引访问、数组项属性
+                    | (Prefix extends '' ? K : `${Prefix}.${K}`)
+                    | `${Prefix extends '' ? K : `${Prefix}.${K}`}.${number}`
+                    | `${Prefix extends '' ? K : `${Prefix}.${K}`}.${number}.${Path<U>}`
+                  : T[K] extends object
+                  ? // 对象类型：支持对象本身和嵌套属性
+                    | (Prefix extends '' ? K : `${Prefix}.${K}`)
+                    | Path<T[K], Prefix extends '' ? `${K}` : `${Prefix}.${K}`>
+                  : // 基本类型：只支持属性本身
+                    Prefix extends ''
+                  ? K
+                  : `${Prefix}.${K}`
+              : never;
+      }[keyof T]
+    : never;
+
+/**
+ * 路径值类型工具
+ * 
+ * 根据路径推断值的类型
+ * 
+ * @template T 数据类型
+ * @template P 路径字符串
+ * 
+ * @example
+ * ```typescript
+ * interface PlayerData {
+ *     name: string;
+ *     stats: { health: number };
+ *     items: Array<{ id: string }>;
+ * }
+ * 
+ * type NameType = PathValue<PlayerData, 'name'>;        // string
+ * type HealthType = PathValue<PlayerData, 'stats.health'>; // number
+ * type ItemIdType = PathValue<PlayerData, 'items.0.id'>;   // string
+ * ```
+ */
+export type PathValue<T, P extends string> = P extends keyof T
+    ? T[P]
+    : P extends `${infer K}.${infer R}`
+    ? K extends keyof T
+        ? R extends `${number}`
+        ? T[K] extends Array<infer U>
+            ? U
+            : never
+        : R extends `${number}.${infer Rest}`
+        ? T[K] extends Array<infer U>
+            ? PathValue<U, Rest>
+            : never
+        : PathValue<T[K], R>
+        : never
+    : never;
+
+/**
  * 观察者接口
  */
 export interface Watcher {
@@ -68,12 +145,62 @@ export interface IViewModel<T = any> {
     readonly model: IModel<T>;
     /** 响应式数据（只读） */
     readonly reactive: IReactive<T>;
-    /** 绑定数据到视图 */
-    bind<TValue = any, TViewValue = any>(
-        path: string, 
-        view: IView, 
-        options?: BindingOptions<TValue, TViewValue>
-    ): DataBinding<T, TValue, TViewValue>;
+    /** 
+     * 类型安全的绑定方法
+     * 
+     * @template P 路径类型（从 Path<T> 推断）
+     * 
+     * @example
+     * ```typescript
+     * interface PlayerData {
+     *     name: string;
+     *     stats: { health: number };
+     * }
+     * 
+     * const viewModel = new ViewModel<PlayerData>(model);
+     * 
+     * // 类型安全：IDE 自动补全，编译时检查
+     * viewModel.bind('name', view);              // ✅
+     * viewModel.bind('stats.health', view);      // ✅
+     * viewModel.bind('stats.hp', view);          // ❌ TypeScript 错误
+     * ```
+     */
+    bind<P extends Path<T> & string>(
+        path: P,
+        view: IView,
+        options?: BindingOptions<PathValue<T, P>>
+    ): DataBinding<T, PathValue<T, P>>;
+    /** 
+     * 批量绑定方法
+     * 
+     * @template P 路径类型（从 Path<T> 推断）
+     * 
+     * @example
+     * ```typescript
+     * const bindings = viewModel.bindMany({
+     *     name: { view, options: { mode: 'two-way' } },
+     *     'stats.health': { view, options: { mode: 'one-way' } }
+     * });
+     * ```
+     */
+    bindMany<P extends Path<T> & string>(
+        bindings: Record<P, BatchBindingItem<T, P>>
+    ): Map<P, DataBinding<T, PathValue<T, P>>>;
+    /** 
+     * 声明式绑定配置方法
+     * 
+     * @example
+     * ```typescript
+     * viewModel.bindConfig({
+     *     view,
+     *     bindings: {
+     *         name: { mode: 'two-way' },
+     *         'stats.health': { mode: 'one-way', converter: (h) => `HP: ${h}` }
+     *     }
+     * });
+     * ```
+     */
+    bindConfig(config: BindingConfig<T>): Map<string, DataBinding<T, any>>;
     /** 解绑 */
     unbind(binding: DataBinding<T, any, any>): void;
     /** 销毁视图模型 */
@@ -113,6 +240,35 @@ export interface BindingOptions<TValue = any, TViewValue = any> {
     reverseConverter?: (value: TViewValue) => TValue;
     /** 验证函数 */
     validator?: (value: TValue | TViewValue) => boolean;
+    /** 错误处理回调 */
+    onError?: (error: Error, path: string, value: any) => void;
+}
+
+/**
+ * 批量绑定配置项
+ * 
+ * @template T 数据类型
+ * @template P 路径类型
+ */
+export interface BatchBindingItem<T, P extends Path<T> & string> {
+    /** 视图 */
+    view: IView;
+    /** 绑定选项（可选） */
+    options?: BindingOptions<PathValue<T, P>>;
+}
+
+/**
+ * 声明式绑定配置
+ * 
+ * @template T 数据类型
+ */
+export interface BindingConfig<T> {
+    /** 视图 */
+    view: IView;
+    /** 绑定配置映射：路径 -> 绑定选项 */
+    bindings: {
+        [P in Path<T> & string]?: BindingOptions<PathValue<T, P>>;
+    };
 }
 
 /**
@@ -141,7 +297,11 @@ export class MVVMError extends Error {
  * 绑定错误
  */
 export class BindingError extends MVVMError {
-    constructor(message: string) {
+    constructor(
+        message: string,
+        public path?: string,
+        public value?: any
+    ) {
         super(message);
         this.name = 'BindingError';
     }
@@ -154,5 +314,33 @@ export class ReactiveError extends MVVMError {
     constructor(message: string) {
         super(message);
         this.name = 'ReactiveError';
+    }
+}
+
+/**
+ * 验证错误
+ */
+export class ValidationError extends MVVMError {
+    constructor(
+        message: string,
+        public path?: string,
+        public value?: any
+    ) {
+        super(message);
+        this.name = 'ValidationError';
+    }
+}
+
+/**
+ * 路径错误
+ */
+export class PathError extends MVVMError {
+    constructor(
+        message: string,
+        public path: string,
+        public availablePaths?: string[]
+    ) {
+        super(message);
+        this.name = 'PathError';
     }
 }

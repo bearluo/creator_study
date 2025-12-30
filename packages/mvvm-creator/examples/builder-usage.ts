@@ -1,20 +1,31 @@
 /**
  * 构建器使用示例
  * 
- * 展示如何使用 BindingBuilder 构建数据绑定
+ * 展示如何使用类型安全的 BindingBuilder 构建数据绑定
  */
 
 import { _decorator, Component, Label, Button, Node } from 'cc';
-import { Model, ViewModel } from '@bl-framework/mvvm';
+import { Model, ViewModel, ValidationError } from '@bl-framework/mvvm';
 import { MVVMComponent } from '@bl-framework/mvvm-creator';
 
 const { ccclass, property } = _decorator;
 
 /**
- * 使用构建器的玩家信息组件
+ * 玩家数据类型
+ */
+interface PlayerData {
+    name: string;
+    level: number;
+    health: number;
+    maxHealth: number;
+    showInfo: boolean;
+}
+
+/**
+ * 使用构建器的玩家信息组件（类型安全版本）
  */
 @ccclass('PlayerInfoBuilder')
-export class PlayerInfoBuilder extends MVVMComponent {
+export class PlayerInfoBuilder extends MVVMComponent<PlayerData> {
     @property(Label)
     nameLabel: Label | null = null;
     
@@ -33,12 +44,12 @@ export class PlayerInfoBuilder extends MVVMComponent {
     @property(Node)
     infoPanel: Node | null = null;
     
-    protected initViewModel(model: Model): ViewModel {
+    protected initViewModel(model: Model<PlayerData>): ViewModel<PlayerData> {
         return new ViewModel(model);
     }
     
-    protected createModel(): Model {
-        return new Model({
+    protected createModel(): Model<PlayerData> {
+        return new Model<PlayerData>({
             name: 'Player 1',
             level: 1,
             health: 100,
@@ -48,19 +59,26 @@ export class PlayerInfoBuilder extends MVVMComponent {
     }
     
     protected onMVVMLoad(): void {
-        // 使用构建器模式构建所有绑定
+        // 使用类型安全的构建器模式构建所有绑定
         this.bindingBuilder
-            // 数据绑定
+            // 数据绑定（类型安全：IDE 自动补全，编译时检查）
             .bind('name', this.nameLabel, 'string', { 
-                converter: (v) => `Name: ${v}` 
+                converter: (v) => `Name: ${v}`  // ✅ v: string（自动推断）
             })
             .bind('level', this.levelLabel, 'string', { 
-                converter: (v) => `Level: ${v}` 
+                converter: (v) => `Level: ${v}`  // ✅ v: number（自动推断）
             })
             .bind('health', this.healthLabel, 'string', { 
-                converter: (v) => {
+                converter: (v) => {  // ✅ v: number（自动推断）
                     const maxHealth = this.viewModel.reactive.value.maxHealth || 100;
                     return `Health: ${v}/${maxHealth}`;
+                },
+                validator: (v) => v >= 0 && v <= this.viewModel.reactive.value.maxHealth,  // ✅ v: number（自动推断）
+                onError: (error, path, value) => {
+                    if (error instanceof ValidationError) {
+                        console.error(`验证失败: ${path} = ${value}`, error.message);
+                        // 错误恢复逻辑
+                    }
                 }
             })
             // 事件绑定
@@ -68,8 +86,12 @@ export class PlayerInfoBuilder extends MVVMComponent {
             .on('click', this.takeDamageButton, this.onTakeDamage.bind(this))
             // 条件渲染
             .if('showInfo', this.infoPanel!)
-            // 构建所有绑定
+            // 构建所有绑定（使用批量绑定 API）
             .build();
+        
+        // ❌ 类型错误示例（编译时检查）
+        // this.bindingBuilder.bind('nam', this.nameLabel);        // ❌ TypeScript 错误
+        // this.bindingBuilder.bind('level.name', this.nameLabel); // ❌ TypeScript 错误
     }
     
     /**

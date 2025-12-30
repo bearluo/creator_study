@@ -2,6 +2,14 @@
 
 bl-framework MVVM 框架，提供完整的 Model-View-ViewModel 架构模式支持。
 
+## ✨ 特性
+
+- ✅ **类型安全**：完整的 TypeScript 类型支持，包括类型安全的路径绑定
+- ✅ **响应式系统**：基于 Proxy 的自动依赖追踪和更新通知
+- ✅ **数据绑定**：支持单向、双向和单向到源的数据绑定
+- ✅ **框架无关**：核心模块不依赖任何 UI 框架
+- ✅ **轻量级**：零运行时依赖，仅使用 TypeScript 和 ES6+ 特性
+
 ## 安装
 
 ```bash
@@ -265,9 +273,125 @@ viewModel.reactive.value.level; // ✅ 类型提示：number
 
 #### 方法
 
-- `bind(path: string, view: IView, options?: BindingOptions): DataBinding` - 绑定数据到视图
+- `bind<P extends Path<T>>(path: P, view: IView, options?: BindingOptions<PathValue<T, P>>): DataBinding` - 类型安全的绑定方法
+- `bindMany<P extends Path<T>>(bindings: Record<P, BatchBindingItem<T, P>>): Map<P, DataBinding>` - 批量绑定方法
+- `bindConfig(config: BindingConfig<T>): Map<string, DataBinding>` - 声明式绑定配置方法
 - `unbind(binding: DataBinding): void` - 解绑
 - `destroy(): void` - 销毁视图模型
+
+#### 类型安全的路径绑定
+
+`ViewModel.bind()` 方法提供类型安全的路径绑定，支持编译时类型检查和 IDE 自动补全：
+
+```typescript
+interface PlayerData {
+    name: string;
+    stats: {
+        health: number;
+        level: number;
+    };
+    items: Array<{ id: string; name: string }>;
+}
+
+const viewModel = new ViewModel<PlayerData>(model);
+
+// ✅ 类型安全：IDE 自动补全，编译时检查
+viewModel.bind('name', view);              // ✅ 正确
+viewModel.bind('stats.health', view);      // ✅ 正确
+viewModel.bind('items.0.name', view);      // ✅ 正确
+
+// ❌ 类型错误：编译时检查
+// viewModel.bind('nam', view);            // ❌ TypeScript 错误
+// viewModel.bind('stats.hp', view);       // ❌ TypeScript 错误
+// viewModel.bind('items.name', view);     // ❌ TypeScript 错误（items 是数组）
+
+// ✅ 类型推断的转换器
+viewModel.bind('stats.health', view, {
+    converter: (health) => `Health: ${health}`,  // ✅ health: number（自动推断）
+    validator: (health) => health > 0            // ✅ health: number（自动推断）
+});
+```
+
+**支持的路径类型**：
+- 顶层属性：`'name'`, `'level'`
+- 嵌套属性：`'stats.health'`, `'stats.level'`
+- 数组路径：`'items.0'`, `'items.0.name'`, `'items.0.id'`
+
+**要求**：TypeScript >= 4.1（模板字面量类型和递归条件类型）
+
+#### 批量绑定 API
+
+`ViewModel.bindMany()` 方法支持一次性绑定多个路径：
+
+```typescript
+interface PlayerData {
+    name: string;
+    stats: { health: number; mana: number };
+}
+
+const viewModel = new ViewModel<PlayerData>(model);
+const view = new MyView();
+
+// 批量绑定
+const bindings = viewModel.bindMany({
+    name: { view, options: { mode: 'two-way' } },
+    'stats.health': { view, options: { mode: 'one-way' } },
+    'stats.mana': { view, options: { mode: 'one-way' } }
+});
+
+// 访问特定绑定
+const nameBinding = bindings.get('name');
+const healthBinding = bindings.get('stats.health');
+```
+
+#### 声明式绑定配置
+
+`ViewModel.bindConfig()` 方法支持声明式绑定配置：
+
+```typescript
+interface PlayerData {
+    name: string;
+    level: number;
+    stats: { health: number };
+}
+
+const viewModel = new ViewModel<PlayerData>(model);
+const view = new MyView();
+
+// 声明式绑定配置
+const bindings = viewModel.bindConfig({
+    view,
+    bindings: {
+        name: { mode: 'two-way' },
+        level: { mode: 'one-way', converter: (level) => `Level: ${level}` },
+        'stats.health': { mode: 'one-way', converter: (health) => `HP: ${health}` }
+    }
+});
+```
+
+#### 错误处理
+
+`BindingOptions` 支持 `onError` 回调来处理绑定过程中的错误：
+
+```typescript
+viewModel.bind('stats.health', view, {
+    mode: 'one-way',
+    validator: (health) => health >= 0 && health <= 100,
+    onError: (error, path, value) => {
+        if (error instanceof ValidationError) {
+            console.error(`验证失败: ${path} = ${value}`, error.message);
+            // 实现错误恢复逻辑
+        } else {
+            console.error(`绑定错误: ${path}`, error);
+        }
+    }
+});
+```
+
+**错误类型**：
+- `ValidationError` - 验证错误（包含路径和值信息）
+- `PathError` - 路径错误（包含路径和可用路径信息）
+- `BindingError` - 绑定错误（包含路径和值信息）
 
 ### View
 

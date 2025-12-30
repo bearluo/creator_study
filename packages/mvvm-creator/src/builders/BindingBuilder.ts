@@ -19,7 +19,7 @@
  */
 
 import type { Node, Component } from 'cc';
-import type { BindingOptions } from '@bl-framework/mvvm';
+import type { BindingOptions, Path, PathValue, BatchBindingItem } from '@bl-framework/mvvm';
 import type { CocosNode, CocosComponent } from '../types';
 import { CocosViewAdapter } from '../adapters/CocosViewAdapter';
 import { CocosIfDirective } from '../directives/CocosIfDirective';
@@ -38,16 +38,34 @@ export interface BindingBuilderOptions {
 
 /**
  * 绑定构建器
+ * 
+ * 提供类型安全的流畅 API 来构建数据绑定、事件绑定等
+ * 
+ * @template T 数据类型
+ * 
+ * @example
+ * ```typescript
+ * interface PlayerData {
+ *     name: string;
+ *     stats: { health: number };
+ * }
+ * 
+ * const builder = new BindingBuilder<PlayerData>(viewModel, node);
+ * builder
+ *     .bind('name', label)              // ✅ 类型安全
+ *     .bind('stats.health', label)      // ✅ 类型安全
+ *     .build();
+ * ```
  */
-export class BindingBuilder {
-    private viewModel: ViewModel;
+export class BindingBuilder<T> {
+    private viewModel: ViewModel<T>;
     private viewAdapter?: CocosViewAdapter;
     private bindings: Array<{
-        path: string;
+        path: Path<T> & string;
         target: CocosNode | CocosComponent | string;
         property?: string;
         componentType?: string;
-        options?: BindingOptions;
+        options?: BindingOptions<any>;
     }> = [];
     private events: Array<{
         event: string;
@@ -67,7 +85,7 @@ export class BindingBuilder {
     private rootNode: CocosNode;
     private componentInstance?: any; // 组件实例，用于解析属性名
     
-    constructor(viewModel: ViewModel, rootNode: CocosNode, viewAdapter?: CocosViewAdapter, componentInstance?: any) {
+    constructor(viewModel: ViewModel<T>, rootNode: CocosNode, viewAdapter?: CocosViewAdapter, componentInstance?: any) {
         this.viewModel = viewModel;
         this.rootNode = rootNode;
         this.viewAdapter = viewAdapter;
@@ -75,18 +93,40 @@ export class BindingBuilder {
     }
     
     /**
-     * 添加数据绑定
+     * 类型安全的数据绑定方法
      * 
-     * @param path 数据路径
+     * @template P 路径类型（从 Path<T> 推断）
+     * @param path 数据路径（类型安全）
      * @param target 目标节点、组件或属性名
      * @param property 属性名称（可选）
-     * @param options 绑定选项（可选）
+     * @param options 绑定选项（可选，值类型自动推断）
+     * @returns this（支持链式调用）
+     * 
+     * @example
+     * ```typescript
+     * interface PlayerData {
+     *     name: string;
+     *     stats: { health: number };
+     * }
+     * 
+     * const builder = new BindingBuilder<PlayerData>(viewModel, node);
+     * 
+     * // 类型安全：IDE 自动补全，编译时检查
+     * builder.bind('name', label);              // ✅
+     * builder.bind('stats.health', label, 'string', {
+     *     converter: (health) => `HP: ${health}` // ✅ health: number（自动推断）
+     * });
+     * 
+     * // ❌ 类型错误：编译时检查
+     * // builder.bind('nam', label);            // ❌ TypeScript 错误
+     * // builder.bind('stats.hp', label);       // ❌ TypeScript 错误
+     * ```
      */
-    bind(
-        path: string,
+    bind<P extends Path<T> & string>(
+        path: P,
         target: CocosNode | CocosComponent | string,
         property?: string,
-        options?: BindingOptions
+        options?: BindingOptions<PathValue<T, P>>
     ): this {
         this.bindings.push({
             path,
@@ -175,10 +215,10 @@ export class BindingBuilder {
             key?: string | ((item: any, index: number) => string | number);
         }>
     ): this {
-        // 处理数据绑定
+        // 处理数据绑定（使用类型断言，因为装饰器路径在编译时是 string，但运行时应该是有效的 Path<T>）
         bindings.forEach(binding => {
             this.bind(
-                binding.path,
+                binding.path as any as Path<T> & string,
                 binding.target, // 属性名，会在 build 时解析
                 binding.property,
                 {
@@ -186,7 +226,7 @@ export class BindingBuilder {
                     converter: binding.converter,
                     reverseConverter: binding.reverseConverter,
                     validator: binding.validator
-                }
+                } as any
             );
             // 更新 componentType（如果提供了）
             const lastBinding = this.bindings[this.bindings.length - 1];
@@ -215,7 +255,7 @@ export class BindingBuilder {
     }
     
     /**
-     * 构建所有绑定
+     * 构建所有绑定（使用批量绑定 API）
      */
     build(): void {
         // 确保视图适配器存在
@@ -225,10 +265,33 @@ export class BindingBuilder {
             });
         }
         
-        // 处理数据绑定
+        // 处理视图适配器映射（在批量绑定前）
         this.bindings.forEach(binding => {
-            this._processBinding(binding);
+            if (typeof binding.target === 'string') {
+                this.viewAdapter!.addMapping({
+                    path: binding.target,
+                    viewPath: binding.path,
+                    componentType: binding.componentType,
+                    propertyName: binding.property
+                });
+            }
         });
+        
+        // 使用批量绑定 API
+        if (this.bindings.length > 0) {
+            const bindingsConfig: Partial<Record<Path<T> & string, BatchBindingItem<T, Path<T> & string>>> = {};
+            this.bindings.forEach(binding => {
+                bindingsConfig[binding.path] = {
+                    view: this.viewAdapter!,
+                    options: binding.options
+                };
+            });
+            
+            // 批量创建绑定
+            this.viewModel.bindMany(
+                bindingsConfig as Record<Path<T> & string, BatchBindingItem<T, Path<T> & string>>
+            );
+        }
         
         // 处理事件绑定
         this.events.forEach(event => {
@@ -244,37 +307,6 @@ export class BindingBuilder {
         this.lists.forEach(list => {
             this._processList(list);
         });
-    }
-    
-    /**
-     * 处理数据绑定
-     */
-    private _processBinding(binding: {
-        path: string;
-        target: CocosNode | CocosComponent | string;
-        property?: string;
-        componentType?: string;
-        options?: BindingOptions;
-    }): void {
-        const target = this._resolveTarget(binding.target);
-        if (!target) {
-            console.warn(`[BindingBuilder] Target not found for binding: ${binding.path}`);
-            return;
-        }
-        
-        // 如果是字符串，需要添加到适配器映射
-        if (typeof binding.target === 'string') {
-            // 添加到适配器映射
-            this.viewAdapter!.addMapping({
-                path: binding.target,
-                viewPath: binding.path,
-                componentType: binding.componentType,
-                propertyName: binding.property
-            });
-        }
-        
-        // 创建绑定
-        this.viewModel.bind(binding.path, this.viewAdapter!, binding.options);
     }
     
     /**

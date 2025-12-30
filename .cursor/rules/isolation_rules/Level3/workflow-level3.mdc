@@ -18,7 +18,7 @@ graph LR
     DocSetup["2. DOCUMENTATION SETUP"] -->
     Plan["3. FEATURE PLANNING (PLAN Mode)"] -->
     Creative["4. CREATIVE PHASES (CREATIVE Mode)"] -->
-    Impl["5. IMPLEMENTATION (IMPLEMENT Mode)"] -->
+    Impl["5. IMPLEMENTATION (BUILD Mode)"] -->
     Reflect["6. REFLECTION (REFLECT Mode)"] -->
     Archive["7. ARCHIVING (ARCHIVE Mode)"]
 
@@ -46,7 +46,7 @@ Level 3 tasks typically involve creating a new, distinct feature or making subst
 
 ```mermaid
 graph TD
-    L3["Level 3 Task In Progress"] --> Assess["Continuous Assessment<br>During PLAN or early IMPLEMENT"]
+    L3["Level 3 Task In Progress"] --> Assess["Continuous Assessment<br>During PLAN or early BUILD"]
 
     Assess --> Up["Upgrade to<br>Level 4?"]
     Assess --> Down["Downgrade to<br>Level 2?"]
@@ -74,7 +74,7 @@ This phase is largely completed in VAN mode, which identifies the task as Level 
   * **Key Existing Files (from VAN):**
       * `memory-bank/tasks.md`: Entry created, complexity set to Level 3.
       * `memory-bank/activeContext.md`: Initial context set.
-      * Relevant Core Rules loaded (e.g., `Core/memory-bank-paths.mdc`, `Core/main-optimized.mdc`).
+      * Relevant Core Rules loaded (e.g., `Core/memory-bank-paths.mdc`, `main.mdc`).
   * **Steps within this Workflow File (Confirmation):**
     1.  Confirm task is Level 3 by checking `memory-bank/tasks.md`.
     2.  Ensure core Memory Bank structure and paths are known (AI should have internalized from `main` rule).
@@ -196,9 +196,9 @@ graph TD
     → If any NO: Complete creative phase work.
     ```
 
-### Phase 5: IMPLEMENTATION (IMPLEMENT Mode)
+### Phase 5: IMPLEMENTATION (BUILD Mode)
 
-Guided by `visual-maps/implement-mode-map.mdc` and `Level3/implementation-L3.mdc`.
+Guided by `visual-maps/build-mode-map.mdc` and `Level3/implementation-L3.mdc`.
 
 ```mermaid
 graph TD

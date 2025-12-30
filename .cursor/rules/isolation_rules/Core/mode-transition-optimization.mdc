@@ -82,19 +82,19 @@ Create a standardized transition document when switching modes:
 - Rule optimization: Only load creative templates for identified components
 ```
 
-### CREATIVE → IMPLEMENT Transition
+### CREATIVE → BUILD Transition
 
 ```markdown
-### CREATIVE → IMPLEMENT
+### CREATIVE → BUILD
 - Context preserved: Design decisions, implementation guidelines, requirements
 - Files transferred: tasks.md, design documents, implementation checklist
 - Rule optimization: Pre-load implementation templates based on design decisions
 ```
 
-### IMPLEMENT → REFLECT Transition
+### BUILD → REFLECT Transition
 
 ```markdown
-### IMPLEMENT → REFLECT
+### BUILD → REFLECT
 - Context preserved: Implementation status, challenges encountered, decisions
 - Files transferred: tasks.md, progress.md, implementation notes
 - Rule optimization: Load reflection templates based on completion status
@@ -111,7 +111,7 @@ const ruleCache = {
   van: {},
   plan: {},
   creative: {},
-  implement: {},
+  build: {},
   reflect: {},
   archive: {}
 };
@@ -195,12 +195,12 @@ function updateMemoryBankFile(filePath, newContent) {
 }
 ```
 
-## 🔗 CREATIVE TO IMPLEMENT BRIDGE
+## 🔗 CREATIVE TO BUILD BRIDGE
 
-Special handling for the critical Creative → Implement transition:
+Special handling for the critical Creative → Build transition:
 
 ```markdown
-## CREATIVE → IMPLEMENT BRIDGE
+## CREATIVE → BUILD BRIDGE
 
 ### Design Decision Summary
 Automatically generated summary of all creative phase decisions:
@@ -314,12 +314,12 @@ When transitioning from PLAN to CREATIVE mode:
 - Reference architecture: docs/system-architecture.md
 ```
 
-### Example: CREATIVE → IMPLEMENT Transition
+### Example: CREATIVE → BUILD Transition
 
-When transitioning from CREATIVE to IMPLEMENT mode:
+When transitioning from CREATIVE to BUILD mode:
 
 ```markdown
-# MODE TRANSITION: CREATIVE → IMPLEMENT
+# MODE TRANSITION: CREATIVE → BUILD
 
 ## Context Summary
 - Task: Implement user authentication system
