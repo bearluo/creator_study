@@ -56,12 +56,6 @@ export class ForDirective extends Directive {
         
         // 创建观察者，监听数组变化
         this.watcher = this.createWatcher(
-            (key, newValue, oldValue, ctx) => {
-                // 当数组本身变化时重新渲染
-                if (String(key) === this.path) {
-                    this._renderItems(newValue || [], ctx);
-                }
-            },
             (ctx) => {
                 // 运行回调：重新渲染
                 const items = this._getValue(this.reactive.value, this.path);

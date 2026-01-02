@@ -80,18 +80,23 @@ export type PathValue<T, P extends string> = P extends keyof T
     : never;
 
 /**
- * 观察者接口
+ * 观察者接口（精简版）
+ *
+ * 职责：
+ * - 声明并维护依赖
+ * - 在依赖变化时重新执行
  */
 export interface Watcher {
-    /** 更新回调 */
-    update(key: string | symbol, newValue: any, oldValue: any): void;
-    /** 运行回调 收集依赖 */
+    /** 执行回调并重新收集依赖 */
     run(): void;
-    /** 添加依赖 */
-    addDependency(key: string | symbol): void;
-    /** 获取所有依赖 */
-    getDependencies(): ReadonlySet<string | symbol>;
-    /** 清除依赖 */
+
+    /** 添加依赖（由 reactive.track 调用） */
+    addDependency(key: string): void;
+
+    /** 获取当前依赖集合 */
+    getDependencies(): ReadonlySet<string>;
+
+    /** 清除依赖（run 前调用） */
     clearDependencies(): void;
 }
 
@@ -117,7 +122,14 @@ export interface IView {
     get(path: string): any;
     /** 设置视图路径的值 */
     set(path: string, value: any): void;
-    /** 监听视图事件 */
+    /** 
+     * 监听视图事件
+     * 
+     * change 事件回调签名：`(path: string, value: any, sourceId?: string) => void`
+     * - path: 数据路径
+     * - value: 值
+     * - sourceId: 源标识（可选，用于多 input 防回环）
+     */
     on(event: string, callback: (...args: any[]) => void): () => void;
     /** 销毁视图 */
     destroy(): void;
@@ -168,7 +180,8 @@ export interface IViewModel<T = any> {
     bind<P extends Path<T> & string>(
         path: P,
         view: IView,
-        options?: BindingOptions<PathValue<T, P>>
+        options?: BindingOptions<PathValue<T, P>>,
+        sourceId?: string
     ): DataBinding<T, PathValue<T, P>>;
     /** 
      * 批量绑定方法

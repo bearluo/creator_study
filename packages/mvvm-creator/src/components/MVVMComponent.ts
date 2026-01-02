@@ -1,271 +1,157 @@
 /**
- * MVVM 组件基类
+ * MVVMComponent - Cocos Creator 组件的 MVVM 基类
  * 
- * Cocos Creator Component 与 MVVM ViewModel 的集成基类
+ * 方案 2.1 最终版：创建/绑定分离的生命周期管理
  */
-
-import { _decorator, Component } from 'cc';
-import { Model, ViewModel } from '@bl-framework/mvvm';
-import { CocosViewAdapter } from '../adapters/CocosViewAdapter';
-import { CocosComponentAdapter } from '../adapters/CocosComponentAdapter';
+import { Component } from 'cc';
+import type { ViewModel, Model, DataBinding } from '@bl-framework/mvvm';
 import { BindingBuilder } from '../builders/BindingBuilder';
-import type { CocosViewAdapterConfig } from '../types/adapters';
-import type { CocosComponentAdapterConfig } from '../adapters/CocosComponentAdapter';
-
-const { ccclass } = _decorator;
-
-/**
- * 装饰器绑定配置
- */
-export interface DecoratorBinding {
-    /** 数据路径（如 'name', 'player.level'） */
-    path: string;
-    /** 目标属性名称（组件中的 @property 属性名） */
-    target: string;
-    /** 组件属性名称（如 'string', 'spriteFrame'） */
-    property?: string;
-    /** 组件类型名称（如 'Label', 'Button'） */
-    componentType?: string;
-    /** 绑定模式 */
-    mode?: 'one-way' | 'two-way' | 'one-way-to-source';
-    /** 值转换函数 */
-    converter?: (value: any) => any;
-    /** 反向转换函数（用于双向绑定） */
-    reverseConverter?: (value: any) => any;
-    /** 验证函数 */
-    validator?: (value: any) => boolean;
-}
-
-/**
- * MVVM 组件配置
- */
-export interface MVVMComponentConfig {
-    /** 数据模型 */
-    model?: Model;
-    /** 视图适配器配置 */
-    viewAdapterConfig?: CocosViewAdapterConfig;
-    /** 组件适配器配置 */
-    componentAdapterConfig?: Omit<CocosComponentAdapterConfig, 'component'>;
-}
+import { TargetViewAdapter } from '../adapters/TargetViewAdapter';
 
 /**
  * MVVM 组件基类
  * 
- * 提供 ViewModel 集成和自动数据绑定功能
- * 
- * @example
- * ```typescript
- * // 方式1: 基础用法（无类型约束）
- * @ccclass('MyMVVMComponent')
- * export class MyMVVMComponent extends MVVMComponent {
- *     protected initViewModel(model: Model<any>): ViewModel<any> {
- *         return new ViewModel(model);
- *     }
- * }
- * 
- * // 方式2: 类型安全用法（推荐）
- * interface PlayerData {
- *     name: string;
- *     level: number;
- * }
- * 
- * @ccclass('PlayerComponent')
- * export class PlayerComponent extends MVVMComponent<PlayerData> {
- *     @property(Label)
- *     titleLabel: Label | null = null;
- *     
- *     protected initViewModel(model: Model<PlayerData>): ViewModel<PlayerData> {
- *         const viewModel = new ViewModel(model);
- *         
- *         // 配置视图适配器
- *         this.viewAdapter = new CocosViewAdapter({
- *             rootNode: this.node,
- *             mappings: [
- *                 { path: 'titleLabel', viewPath: 'name', componentType: 'Label', propertyName: 'string' }
- *             ]
- *         });
- *         
- *         // 绑定数据
- *         viewModel.bind('name', this.viewAdapter, { mode: 'one-way' });
- *         
- *         return viewModel;
- *     }
- *     
- *     protected createModel(): Model<PlayerData> {
- *         return new Model<PlayerData>({ name: '', level: 1 });
- *     }
- *     
- *     onLoad() {
- *         super.onLoad();
- *         // 现在有类型提示
- *         this.viewModel.reactive.value.name; // ✅ string
- *         this.viewModel.reactive.value.level; // ✅ number
- *     }
- * }
- * ```
+ * 职责：
+ * - 管生命周期（enable/build，disable/destroy）
+ * - 统一管理 bindings 和 view 的销毁
  */
-@ccclass('MVVMComponent')
 export abstract class MVVMComponent<T = any> extends Component {
-    /** ViewModel 实例 */
     protected viewModel!: ViewModel<T>;
-    
-    /** 视图适配器 */
-    protected viewAdapter!: CocosViewAdapter;
-    
-    /** 组件适配器 */
-    protected componentAdapter?: CocosComponentAdapter;
-    
-    /** 绑定构建器 */
     protected bindingBuilder!: BindingBuilder<T>;
-    
+    protected view?: TargetViewAdapter; // 现在 holds the shared adapter
+
+    private isCreated = false;
+    private isBound = false;
+    private bindings: DataBinding<T, any, any>[] = [];
+
     /**
-     * 初始化 ViewModel
-     * 子类需要实现此方法来创建和配置 ViewModel
-     * 
-     * @param model 数据模型
-     * @returns ViewModel 实例
-     * 
-     * @example
-     * ```typescript
-     * interface PlayerData {
-     *     name: string;
-     *     level: number;
-     * }
-     * 
-     * protected initViewModel(model: Model<PlayerData>): ViewModel<PlayerData> {
-     *     return new ViewModel(model);
-     * }
-     * ```
+     * onLoad：只做一次性的"结构准备"
+     * - 缓存组件引用 / 找节点（最好都 @property）
+     * - 创建 viewAdapter（如果它只是映射，不挂事件）
+     * - 不做 watch、不做绑定订阅（避免禁用/启用导致重复）
      */
+    override onLoad(): void {
+        this._createIfNeeded(); // 只创建，不绑定
+    }
+
+    /**
+     * onEnable：开始"激活绑定/订阅"
+     * - 建立 reactive.watch（watcher 依赖收集）
+     * - 注册 view change（two-way）
+     * - 执行一次 run（初始渲染）
+     */
+    override onEnable(): void {
+        this._createIfNeeded();
+        this._bindIfNeeded();   // 建立订阅/事件
+    }
+
+    /**
+     * onDisable：暂停"绑定/订阅"（非常推荐）
+     * - destroy/unwatch 所有 DataBinding（或统一暂停）
+     * - 解绑 view change 监听
+     * - Cocos 里节点 disable 可能频繁发生；不暂停会导致隐藏 UI 仍在跑 watcher.run，浪费且可能改到无效组件。
+     */
+    override onDisable(): void {
+        this._unbindIfNeeded(); // 暂停订阅/事件（强烈建议）
+    }
+
+    /**
+     * onDestroy：彻底释放
+     * - 确保 onDisable 已做的事情都做过（幂等）
+     * - 释放 adapter 映射、清空引用
+     */
+    override onDestroy(): void {
+        this._unbindIfNeeded();
+        this._destroyAll();
+    }
+
+    /**
+     * 创建 MVVM 对象（只一次）
+     */
+    private _createIfNeeded(): void {
+        if (this.isCreated) return;
+
+        const model = this.createModel();
+        this.viewModel = this.initViewModel(model);
+
+        this.bindingBuilder = new BindingBuilder<T>(this.viewModel);
+
+        this.onMVVMCreate(); // 子类声明绑定规则/注册命令等（不做 build）
+        this.isCreated = true;
+    }
+
+    /**
+     * 建立绑定和订阅（可反复执行）
+     * 
+     * ⚠️ **风险控制**：build 失败时的半成品清理策略
+     * - BindingBuilder.build() 内部已处理半成品清理（见 BindingBuilder 设计）
+     * - 这里只需要确保 isBound 标志正确
+     */
+    private _bindIfNeeded(): void {
+        if (this.isBound) return;
+
+        try {
+            // build returns bindings and the shared view adapter
+            // ⚠️ 如果 build 中途 throw，BindingBuilder 会清理已创建的 bindings 和 view
+            const { bindings, view } = this.bindingBuilder.build();
+            this.bindings = bindings;
+            this.view = view; // Store the shared adapter
+
+            this.isBound = true;
+        } catch (error) {
+            console.error(`[MVVMComponent] Binding failed:`, error);
+            // BindingBuilder 已清理半成品，这里只需要重置标志
+            this.isBound = false;
+            throw error;
+        }
+    }
+
+    /**
+     * 断开绑定和订阅（可反复执行，幂等）
+     */
+    private _unbindIfNeeded(): void {
+        if (!this.isBound) return;
+
+        // 销毁所有 DataBinding（解绑 reactive.watch）
+        for (const binding of this.bindings) {
+            binding.destroy();
+        }
+        this.bindings.length = 0;
+
+        // 销毁 view（解绑所有已注册的 onChange）
+        if (this.view) {
+            this.view.destroy();
+            this.view = undefined;
+        }
+
+        this.isBound = false;
+    }
+
+    /**
+     * 销毁所有 MVVM 对象（只一次）
+     */
+    private _destroyAll(): void {
+        if (!this.isCreated) return;
+
+        // 确保已解绑
+        this._unbindIfNeeded();
+
+        // 清空引用（可选）
+        // @ts-ignore
+        this.viewModel = undefined;
+        // @ts-ignore
+        this.bindingBuilder = undefined;
+
+        this.isCreated = false;
+    }
+
+    // 抽象方法
+    protected abstract createModel(): Model<T>;
     protected abstract initViewModel(model: Model<T>): ViewModel<T>;
     
     /**
-     * 创建数据模型
-     * 子类可以重写此方法来创建自定义模型
-     * 
-     * @returns 数据模型实例
-     * 
-     * @example
-     * ```typescript
-     * interface PlayerData {
-     *     name: string;
-     *     level: number;
-     * }
-     * 
-     * protected createModel(): Model<PlayerData> {
-     *     return new Model<PlayerData>({ name: '', level: 1 });
-     * }
-     * ```
+     * 只做一次：声明绑定、准备命令、缓存组件引用等
+     * 注意：这里不应该调用 build()，build() 由基类在 onEnable 时统一调用
      */
-    protected createModel(): Model<T> {
-        // 默认返回一个空模型
-        return new Model({} as T);
-    }
-    
-    /**
-     * 组件加载时调用
-     */
-    onLoad(): void {
-        // 创建模型
-        const model = this.createModel();
-        
-        // 初始化 ViewModel
-        this.viewModel = this.initViewModel(model);
-        
-        // 创建视图适配器
-        this.viewAdapter = this.createViewAdapter();
-        
-        // 创建绑定构建器（传入组件实例用于解析属性，传递类型信息）
-        this.bindingBuilder = new BindingBuilder<T>(this.viewModel, this.node, this.viewAdapter, this);
-        
-        // 处理装饰器绑定（统一使用 BindingBuilder）
-        this.processDecoratorBindings();
-        
-        // 调用子类初始化
-        this.onMVVMLoad();
-    }
-    
-    /**
-     * 创建视图适配器
-     * 子类可以重写此方法来自定义适配器配置
-     */
-    protected createViewAdapter(): CocosViewAdapter {
-        return new CocosViewAdapter({
-            rootNode: this.node
-        });
-    }
-    
-    /**
-     * 处理装饰器绑定
-     * 统一使用 BindingBuilder 处理，避免代码重复
-     */
-    private processDecoratorBindings(): void {
-        const constructor = this.constructor as any;
-        const bindings: DecoratorBinding[] = constructor.__bindings__ || [];
-        const events = constructor.__events__ || [];
-        const conditions = constructor.__conditions__ || [];
-        const lists = constructor.__lists__ || [];
-        
-        // 使用 BindingBuilder 统一处理所有装饰器绑定
-        this.bindingBuilder.fromDecorators(bindings, events, conditions, lists);
-        
-        // 构建所有绑定
-        this.bindingBuilder.build();
-    }
-    
-    /**
-     * 设置列表项数据
-     * 用于列表渲染指令（CocosForDirective）绑定数据
-     * 子类可以重写此方法来自定义数据绑定逻辑
-     * 
-     * @param data 列表项数据
-     * 
-     * @example
-     * ```typescript
-     * // 默认实现会更新 reactive.value
-     * component.setItemData({ name: 'Item 1', value: 100 });
-     * 
-     * // 子类可以重写
-     * setItemData(data: any): void {
-     *     // 自定义逻辑
-     *     Object.assign(this.viewModel.reactive.value, data);
-     * }
-     * ```
-     */
-    setItemData(data: Partial<T>): void {
-        if (this.viewModel) {
-            // 更新响应式对象的值
-            Object.assign(this.viewModel.reactive.value as any, data);
-        }
-    }
-    
-    /**
-     * 子类可以重写此方法进行额外初始化
-     * 在装饰器绑定处理完成后调用
-     */
-    protected onMVVMLoad(): void {
-        // 子类实现
-    }
-    
-    /**
-     * 组件销毁时调用
-     */
-    onDestroy(): void {
-        // 销毁 ViewModel
-        if (this.viewModel) {
-            this.viewModel.destroy();
-        }
-        
-        // 销毁适配器
-        if (this.viewAdapter) {
-            this.viewAdapter.destroy();
-        }
-        
-        if (this.componentAdapter) {
-            this.componentAdapter.destroy();
-        }
-        
-        super.onDestroy?.();
-    }
+    protected abstract onMVVMCreate(): void;
 }
-

@@ -76,14 +76,6 @@ export class BindDirective extends Directive {
         
         // 创建观察者，监听数据变化
         this.watcher = this.createWatcher(
-            (key, newValue, oldValue, ctx) => {
-                // 当路径对应的属性变化时更新
-                if (String(key) === this.path || this.path.startsWith(String(key) + '.')) {
-                    const value = this._getValue(this.reactive.value, this.path);
-                    const convertedValue = this.converter ? this.converter(value) : value;
-                    ctx.element.setProperty(ctx.propertyName || this.propertyName, convertedValue);
-                }
-            },
             (ctx) => {
                 // 运行回调：重新绑定
                 const value = this._getValue(this.reactive.value, this.path);

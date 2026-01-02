@@ -1,19 +1,6 @@
 /**
- * 适配器模块导出
+ * 适配器导出
  */
-
 export { CocosViewAdapter } from './CocosViewAdapter';
-export { CocosComponentAdapter } from './CocosComponentAdapter';
-
-export type {
-    NodeViewMapping,
-    ComponentPropertyAccessor,
-    CocosViewAdapterConfig
-} from '../types/adapters';
-
-export type {
-    ComponentPropertyBinding,
-    ComponentEventBinding,
-    CocosComponentAdapterConfig
-} from './CocosComponentAdapter';
-
+export type { CocosViewAdapterConfig } from './CocosViewAdapter';
+export { TargetViewAdapter } from './TargetViewAdapter';

@@ -109,20 +109,12 @@ export class Reactive<T> implements IReactive<T> {
                 // 构建当前属性的完整路径
                 const currentPath = parentPath ? `${parentPath}.${String(key)}` : String(key);
                 
-                // 推入路径栈（用于依赖收集）
-                this.dependencyTracker.pushPath(key);
+                // 依赖收集（只在有当前 watcher 时，使用完整路径）
+                this.dependencyTracker.track(currentPath);
                 
-                try {
-                    // 依赖收集（只在有当前 watcher 时，使用完整路径）
-                    this.dependencyTracker.track(key, currentPath);
-                    
-                    // 递归创建 Proxy（传递完整路径）
-                    // _createProxy 内部会自动判断是否是对象/数组，非对象类型会直接返回原值
-                    return this._createProxy(value, currentPath);
-                } finally {
-                    // 弹出路径栈
-                    this.dependencyTracker.popPath();
-                }
+                // 递归创建 Proxy（传递完整路径）
+                // _createProxy 内部会自动判断是否是对象/数组，非对象类型会直接返回原值
+                return this._createProxy(value, currentPath);
             },
             set: (obj, key, value) => {
                 const oldValue = Reflect.get(obj, key);
@@ -178,20 +170,12 @@ export class Reactive<T> implements IReactive<T> {
                 // 构建当前属性的完整路径
                 const currentPath = parentPath ? `${parentPath}.${String(key)}` : String(key);
                 
-                // 推入路径栈（用于依赖收集）
-                this.dependencyTracker.pushPath(key);
+                // 依赖收集（只在有当前 watcher 时，使用完整路径）
+                this.dependencyTracker.track(currentPath);
                 
-                try {
-                    // 依赖收集（只在有当前 watcher 时，使用完整路径）
-                    this.dependencyTracker.track(key, currentPath);
-                    
-                    // 递归创建 Proxy（传递完整路径）
-                    // _createProxy 内部会自动判断是否是对象/数组，非对象类型会直接返回原值
-                    return this._createProxy(value, currentPath) as any;
-                } finally {
-                    // 弹出路径栈
-                    this.dependencyTracker.popPath();
-                }
+                // 递归创建 Proxy（传递完整路径）
+                // _createProxy 内部会自动判断是否是对象/数组，非对象类型会直接返回原值
+                return this._createProxy(value, currentPath) as any;
             },
             set: (arr, key, value, receiver) => {
                 const oldValue = Reflect.get(arr, key, receiver);
@@ -245,13 +229,9 @@ export class Reactive<T> implements IReactive<T> {
     /**
      * 触发更新
      */
-    private _triggerUpdate(key: string | symbol, newValue: any, oldValue: any): void {
+    private _triggerUpdate(path: string, newValue: any, oldValue: any): void {
         // 使用依赖追踪器获取相关的 watcher
-        const watchers = this.dependencyTracker.getWatchers(key);
-        
-        // 立即调用 update 回调（精确通知，包含具体变化信息）
-        // 使用 dependencyTracker.trigger() 来保持一致性
-        this.dependencyTracker.trigger(key, newValue, oldValue);
+        const watchers = this.dependencyTracker.getWatchers(path);
         
         // 添加到更新队列（用于批量更新 run 回调，自动去重）
         watchers.forEach(watcher => {
@@ -288,7 +268,10 @@ export class Reactive<T> implements IReactive<T> {
         this.updateQueue.clear();
         
         // 批量更新 run 回调
-        watchersToUpdate.forEach(w => this._runWithTracking(w));
+        watchersToUpdate.forEach(w => {
+            if (!this.watchers.has(w)) return; // watcher 已 unwatch/destroy
+            this._runWithTracking(w);
+        });
     }
 
     private _runWithTracking(watcher: Watcher) {

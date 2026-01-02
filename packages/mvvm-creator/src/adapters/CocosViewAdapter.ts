@@ -1,314 +1,280 @@
 /**
- * Cocos Creator 视图适配器
+ * CocosViewAdapter - 实现 IView 接口，适配 Cocos Creator 的 Node 和 Component
  * 
- * 将 Cocos Creator Node 适配为 MVVM View 接口
+ * 方案 3.2 最终版：统一路径格式方案（memberPath + 静默更新保护 + 类型精确 + Node 支持）
  */
-
+import * as cc from 'cc';
 import type { IView } from '@bl-framework/mvvm';
-import type { CocosNode, CocosComponent } from '../types';
-import type { NodeViewMapping, ComponentPropertyAccessor, CocosViewAdapterConfig } from '../types/adapters';
+import type { ViewMapping, DisplayMapping, InputMapping } from '../types/cocos';
+
+/**
+ * CocosViewAdapter 配置
+ */
+export interface CocosViewAdapterConfig {
+    /** 根节点（用于 BindingBuilder 解析，Adapter 本身不解析路径） */
+    rootNode: cc.Node;
+    /** 组件实例（可选，用于 BindingBuilder 解析） */
+    componentInstance?: any;
+}
 
 /**
  * Cocos Creator 视图适配器
  * 
- * 实现 MVVM View 接口，适配 Cocos Creator Node
- * 
- * @example
- * ```typescript
- * const node = this.node; // Cocos Creator Node
- * const adapter = new CocosViewAdapter({ rootNode: node });
- * 
- * // 绑定数据
- * viewModel.bind('title', adapter, { mode: 'one-way' });
- * ```
+ * 职责：
+ * - 统一事件总线（change 事件）
+ * - dataPath → view target 映射（O(1) Map 查找）
+ * - 不解析 path，只做映射
+ * - update()：只写不 emit
+ * - set()：写 + emit（仅模拟输入）
  */
 export class CocosViewAdapter implements IView {
-    private rootNode: CocosNode;
-    private mappings: Map<string, NodeViewMapping> = new Map();
-    private propertyAccessor?: ComponentPropertyAccessor;
-    private eventUnsubscribes: Map<string, () => void> = new Map();
+    private mappings = new Map<string, ViewMapping>();
+    private changeListeners = new Set<(path: string, value: any) => void>();
+    private inputUnsubs: Array<() => void> = [];
     
     constructor(config: CocosViewAdapterConfig) {
-        this.rootNode = config.rootNode;
-        this.propertyAccessor = config.propertyAccessor;
+        // rootNode 和 componentInstance 可以存储，但主要用于 BindingBuilder 解析
+        // Adapter 本身只负责映射管理
+    }
+    
+    /**
+     * 添加映射
+     * 
+     * @param dataPath 数据路径（key）
+     * @param mapping 视图映射
+     */
+    addMapping(dataPath: string, mapping: ViewMapping): void {
+        // 检测重复映射
+        if (this.mappings.has(dataPath)) {
+            throw new Error(`[CocosViewAdapter] Duplicate mapping for dataPath: ${dataPath}`);
+        }
         
-        // 建立映射关系
-        if (config.mappings) {
-            config.mappings.forEach(mapping => {
-                this.mappings.set(mapping.viewPath, mapping);
-            });
+        // 验证 memberPath 至少 1 段
+        if (!mapping.memberPath || mapping.memberPath.length === 0) {
+            throw new Error(`[CocosViewAdapter] memberPath must have at least 1 segment`);
+        }
+        
+        this.mappings.set(dataPath, mapping);
+        
+        // 如果 mapping 带 input 监听能力，在这里注册
+        if (mapping.kind === 'input') {
+            const un = mapping.bindInput(this, dataPath);
+            if (typeof un === 'function') {
+                this.inputUnsubs.push(un);
+            }
         }
     }
     
     /**
-     * 更新视图路径的值
-     * @param path 视图路径（如 'title', 'player.name'）
-     * @param value 新值
+     * 更新视图（只写不 emit）
+     * 
+     * @param path 数据路径
+     * @param value 值
      */
     update(path: string, value: any): void {
         const mapping = this.mappings.get(path);
-        if (mapping) {
-            this._updateNodeByMapping(mapping, value);
-        } else {
-            // 默认行为：尝试更新根节点的属性
-            this._updateNodeProperty(this.rootNode, path, value);
+        if (!mapping) {
+            console.warn(`[CocosViewAdapter] No mapping for path: ${path}`);
+            return;
         }
+        this._setByMapping(path, mapping, value);
     }
     
     /**
-     * 获取视图路径的值
-     * @param path 视图路径
-     * @returns 当前值
+     * 获取视图值
+     * 
+     * @param path 数据路径
+     * @returns 视图值
      */
     get(path: string): any {
         const mapping = this.mappings.get(path);
-        if (mapping) {
-            return this._getNodeValueByMapping(mapping);
-        } else {
-            return this._getNodeProperty(this.rootNode, path);
+        if (!mapping) {
+            return undefined;
         }
+        return this._getByMapping(mapping);
     }
     
     /**
-     * 设置视图路径的值
-     * @param path 视图路径
-     * @param value 新值
+     * 设置视图值（写 + emit，用于模拟用户输入）
+     * 
+     * @param path 数据路径
+     * @param value 值
      */
     set(path: string, value: any): void {
         this.update(path, value);
-        // 触发 change 事件（用于双向绑定）
         this._emitChange(path, value);
     }
     
     /**
      * 监听视图事件
-     * @param event 事件名称
+     * 
+     * @param event 事件名称（主要支持 'change'）
      * @param callback 回调函数
-     * @returns 取消监听的函数
+     * @returns 取消订阅函数
      */
     on(event: string, callback: (...args: any[]) => void): () => void {
         if (event === 'change') {
-            // change 事件是内部事件，不需要绑定到 Cocos Creator 节点
-            // 可以在这里实现一个简单的内部事件系统
-            return () => {}; // 暂时返回空函数
+            const fn = callback as (path: string, value: any) => void;
+            this.changeListeners.add(fn);
+            return () => {
+                this.changeListeners.delete(fn);
+            };
         }
         
-        // 其他事件绑定到根节点
-        this.rootNode.on(event, callback);
-        
-        const unsubscribe = () => {
-            this.rootNode.off(event, callback);
-            this.eventUnsubscribes.delete(event);
-        };
-        
-        this.eventUnsubscribes.set(event, unsubscribe);
-        return unsubscribe;
+        // 其他 event：console.warn + 返回空 unsubscriber（不 throw）
+        console.warn(`[CocosViewAdapter] Unsupported event "${event}"`);
+        return () => {};
     }
     
     /**
      * 销毁视图适配器
      */
     destroy(): void {
-        // 取消所有事件监听
-        this.eventUnsubscribes.forEach(unsubscribe => unsubscribe());
-        this.eventUnsubscribes.clear();
+        // 1. 解绑输入事件
+        for (const un of this.inputUnsubs) {
+            un();
+        }
+        this.inputUnsubs.length = 0;
         
-        // 清空映射
+        // 2. 清理 mapping 内资源（可选清理钩子）
+        for (const mapping of this.mappings.values()) {
+            mapping.dispose?.();
+        }
+        
+        // 3. 清空映射和监听器
         this.mappings.clear();
+        this.changeListeners.clear();
     }
     
     /**
-     * 根据映射更新节点
+     * 触发 change 事件（给 InputMapping 用）
+     * 
+     * @param path 数据路径
+     * @param value 值
      */
-    private _updateNodeByMapping(mapping: NodeViewMapping, value: any): void {
-        const node = this._getNodeByPath(mapping.path);
-        if (!node) {
-            console.warn(`[CocosViewAdapter] Node not found: ${mapping.path}`);
+    emitChange(path: string, value: any): void {
+        this._emitChange(path, value);
+    }
+    
+    /**
+     * 解析根对象（Node 或 Component）
+     * 
+     * 支持三类 root：
+     * - target is Component → root=component
+     * - target is Node + componentCtor → root=node.getComponent(ctor)
+     * - target is Node + no ctor → root=node（Node.active/position/...）
+     */
+    private _resolveRoot(mapping: ViewMapping): cc.Node | cc.Component | null {
+        const t = mapping.target;
+        // 运行时用 cc.Component / cc.Node 判断（import type 会被擦除）
+        if (t instanceof cc.Component) {
+            return t;
+        }
+        
+        // t is Node
+        if (mapping.componentCtor) {
+            return t.getComponent(mapping.componentCtor);
+        }
+        
+        // 允许 Node 直接作为 root（Node.active 等）
+        return t;
+    }
+    
+    /**
+     * 走到父对象（用于 set）
+     * 
+     * @returns { parent: any; key: string } | null
+     * 
+     * ⚠️ **硬性约束**：memberPath 只用于访问已存在字段，不做 auto-create
+     * - 如果中间层为空，直接 warn 并返回 null
+     * - UI 侧字段路径必须存在（比如 Label.string 永远存在）
+     * - 不允许自动创建中间对象
+     */
+    private _walkToParent(root: any, path: string[]): { parent: any; key: string } | null {
+        let obj = root;
+        for (let i = 0; i < path.length - 1; i++) {
+            obj = obj?.[path[i]];
+            if (obj == null) {
+                return null;  // 0/false/'' 不会触发 == null，OK
+        }
+        }
+        return { parent: obj, key: path[path.length - 1] };
+    }
+    
+    /**
+     * 根据映射设置值（核心逻辑 - 方案 3.2 真·最终版）
+     * 
+     * 逻辑：
+     * 1. resolveRoot：拿到 root 对象（Node 或 Component）
+     * 2. walkToParent：走到父对象
+     * 3. 如果是 InputMapping，在写入时 silentDepth 包起来（计数器 + try/finally）
+     * 
+     * @param dataPath 数据路径（用于错误提示）
+     * @param mapping 视图映射
+     * @param value 值
+     */
+    private _setByMapping(dataPath: string, mapping: ViewMapping, value: any): void {
+        // 1. resolveRoot：拿到 root 对象
+        const root = this._resolveRoot(mapping);
+        if (!root) {
+            console.warn(`[CocosViewAdapter] Cannot resolve root for "${dataPath}"`, mapping);
+            return;
+    }
+    
+        // 2. walkToParent：走到父对象
+        const info = this._walkToParent(root, mapping.memberPath);
+        if (!info) {
+            console.warn(`[CocosViewAdapter] Cannot access path ${mapping.memberPath.join('.')} for "${dataPath}"`);
             return;
         }
         
-        if (mapping.componentType && mapping.propertyName) {
-            // 更新组件属性
-            this._updateComponentProperty(node, mapping.componentType, mapping.propertyName, value);
-        } else {
-            // 更新节点属性
-            this._updateNodeProperty(node, mapping.propertyName || '', value);
+        // 3. 如果是 InputMapping，在写入时 silentDepth 包起来（防止程序 set 引发输入事件回环）
+        if (mapping.kind === 'input') {
+            mapping._silentDepth = (mapping._silentDepth ?? 0) + 1;
+        }
+        
+        try {
+            info.parent[info.key] = value;
+        } finally {
+            // 使用 try/finally 保证恢复，即使异常也能恢复
+            if (mapping.kind === 'input') {
+                mapping._silentDepth = (mapping._silentDepth ?? 1) - 1;
+            }
         }
     }
     
     /**
-     * 根据映射获取节点值
+     * 根据映射获取值（核心逻辑 - 方案 3.2 真·最终版）
+     * 
+     * 逻辑：
+     * 1. resolveRoot：拿到 root 对象
+     * 2. walk memberPath：最后一段 get
      */
-    private _getNodeValueByMapping(mapping: NodeViewMapping): any {
-        const node = this._getNodeByPath(mapping.path);
-        if (!node) {
+    private _getByMapping(mapping: ViewMapping): any {
+        // 1. resolveRoot：拿到 root 对象
+        const root = this._resolveRoot(mapping);
+        if (!root) {
             return undefined;
         }
         
-        if (mapping.componentType && mapping.propertyName) {
-            return this._getComponentProperty(node, mapping.componentType, mapping.propertyName);
-        } else {
-            return this._getNodeProperty(node, mapping.propertyName || '');
-        }
-    }
-    
-    /**
-     * 根据路径获取节点
-     */
-    private _getNodeByPath(path: string): CocosNode | null {
-        if (path === '' || path === '/') {
-            return this.rootNode;
-        }
-        
-        // 简单的路径解析（支持 '/' 分隔的路径）
-        const parts = path.split('/').filter(p => p);
-        let currentNode: CocosNode | null = this.rootNode;
-        
-        for (const part of parts) {
-            if (!currentNode) {
-                return null;
+        // 2. walk memberPath：最后一段 get
+        let obj: any = root;
+        for (const key of mapping.memberPath) {
+            obj = obj?.[key];
+            if (obj == null) {
+                return undefined;  // 0/false/'' 不会触发 == null，OK
             }
-            
-            const child: CocosNode | undefined = currentNode.children.find((c) => c.name === part);
-            if (!child) {
-                return null;
-            }
-            
-            currentNode = child;
         }
         
-        return currentNode;
+        return obj;
     }
     
     /**
-     * 更新组件属性
-     * 
-     * 注意：componentType 应该是从 'cc' 模块导入的组件类
-     * 例如：Label, Button, Sprite 等
-     * 由于类型系统的限制，这里使用 any 类型来处理动态组件类型
-     */
-    private _updateComponentProperty(
-        node: CocosNode,
-        componentType: string,
-        propertyName: string,
-        value: any
-    ): void {
-        // 注意：在实际使用中，componentType 应该是一个组件类的构造函数
-        // 但由于字符串类型的限制，我们需要使用动态方式
-        // 建议使用 ComponentPropertyAccessor 来提供更好的类型安全
-        
-        // 使用属性访问器（如果提供）- 推荐方式
-        if (this.propertyAccessor) {
-            // 通过属性访问器获取组件
-            const component = this.propertyAccessor.getComponent(node, componentType as any);
-            if (component) {
-                this.propertyAccessor.setProperty(component, propertyName, value);
-            } else {
-                console.warn(`[CocosViewAdapter] Component not found: ${componentType}`);
-            }
-        } else {
-            // 默认行为：尝试通过节点路径直接访问
-            // 注意：这种方式需要组件已经被添加到节点上，并且属性名称正确
-            console.warn(`[CocosViewAdapter] PropertyAccessor not provided, cannot update component property`);
-        }
-    }
-    
-    /**
-     * 获取组件属性
-     * 
-     * 注意：componentType 应该是从 'cc' 模块导入的组件类
-     */
-    private _getComponentProperty(
-        node: CocosNode,
-        componentType: string,
-        propertyName: string
-    ): any {
-        // 使用属性访问器（如果提供）- 推荐方式
-        if (this.propertyAccessor) {
-            const component = this.propertyAccessor.getComponent(node, componentType as any);
-            if (component) {
-                return this.propertyAccessor.getProperty(component, propertyName);
-            }
-        } else {
-            console.warn(`[CocosViewAdapter] PropertyAccessor not provided, cannot get component property`);
-        }
-        
-        return undefined;
-    }
-    
-    /**
-     * 更新节点属性
-     */
-    private _updateNodeProperty(node: CocosNode, propertyName: string, value: any): void {
-        if (!propertyName) {
-            return;
-        }
-        
-        // 常见的节点属性
-        switch (propertyName) {
-            case 'active':
-                node.active = Boolean(value);
-                break;
-            case 'name':
-                node.name = String(value);
-                break;
-            default:
-                // 尝试设置自定义属性
-                (node as any)[propertyName] = value;
-                break;
-        }
-    }
-    
-    /**
-     * 获取节点属性
-     */
-    private _getNodeProperty(node: CocosNode, propertyName: string): any {
-        if (!propertyName) {
-            return undefined;
-        }
-        
-        // 常见的节点属性
-        switch (propertyName) {
-            case 'active':
-                return node.active;
-            case 'name':
-                return node.name;
-            default:
-                // 尝试获取自定义属性
-                return (node as any)[propertyName];
-        }
-    }
-    
-    /**
-     * 触发 change 事件（用于双向绑定）
+     * 触发 change 事件（内部方法）
      */
     private _emitChange(path: string, value: any): void {
-        // 这里可以实现一个简单的事件系统
-        // 暂时不实现，因为双向绑定通常通过 Cocos Creator 的事件系统来处理
-    }
-    
-    /**
-     * 添加映射
-     * @param mapping 映射配置
-     */
-    addMapping(mapping: NodeViewMapping): void {
-        this.mappings.set(mapping.viewPath, mapping);
-    }
-    
-    /**
-     * 移除映射
-     * @param viewPath 视图路径
-     */
-    removeMapping(viewPath: string): void {
-        this.mappings.delete(viewPath);
-    }
-    
-    /**
-     * 获取所有映射
-     * @returns 所有映射配置
-     */
-    getMappings(): ReadonlyMap<string, NodeViewMapping> {
-        return this.mappings;
+        for (const callback of this.changeListeners) {
+            callback(path, value);
     }
 }
-
+}

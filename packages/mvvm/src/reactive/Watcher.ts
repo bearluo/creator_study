@@ -1,32 +1,24 @@
 import type { Watcher as IWatcher } from '../core/types';
 
 /**
- * 观察者
+ * 观察者（精简版）
  * 
- * 用于监听响应式数据的变化
+ * 职责：
+ * - 声明并维护依赖
+ * - 在依赖变化时重新执行
  */
 export class Watcher implements IWatcher {
-    private callback: (key: string | symbol, newValue: any, oldValue: any) => void;
     private runCallback?: () => void;
-    private dependencies: Set<string | symbol> = new Set();
+    private dependencies: Set<string> = new Set();
     
     constructor(
-        callback: (key: string | symbol, newValue: any, oldValue: any) => void,
         runCallback?: () => void
     ) {
-        this.callback = callback;
         this.runCallback = runCallback;
     }
     
     /**
-     * 更新回调
-     */
-    update(key: string | symbol, newValue: any, oldValue: any): void {
-        this.callback(key, newValue, oldValue);
-    }
-    
-    /**
-     * 运行回调
+     * 执行回调并重新收集依赖
      */
     run(): void {
         if (this.runCallback) {
@@ -35,21 +27,21 @@ export class Watcher implements IWatcher {
     }
     
     /**
-     * 添加依赖
+     * 添加依赖（由 reactive.track 调用）
      */
-    addDependency(key: string | symbol): void {
+    addDependency(key: string): void {
         this.dependencies.add(key);
     }
     
     /**
-     * 获取所有依赖
+     * 获取当前依赖集合
      */
-    getDependencies(): ReadonlySet<string | symbol> {
+    getDependencies(): ReadonlySet<string> {
         return this.dependencies;
     }
     
     /**
-     * 清除依赖
+     * 清除依赖（run 前调用）
      */
     clearDependencies(): void {
         this.dependencies.clear();

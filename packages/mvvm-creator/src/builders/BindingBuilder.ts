@@ -1,450 +1,126 @@
 /**
- * 绑定构建器
+ * BindingBuilder - 类型安全的绑定构建器
  * 
- * 提供流畅的 API 来构建数据绑定、事件绑定等
- * 
- * @example
- * ```typescript
- * onLoad() {
- *     super.onLoad();
- *     
- *     this.bindingBuilder
- *         .bind('name', this.nameLabel, 'string')
- *         .bind('level', this.levelLabel, 'string', { converter: (v) => `Lv.${v}` })
- *         .on('click', this.levelUpButton, this.onLevelUp)
- *         .if('showInfo', this.infoPanel)
- *         .build();
- * }
- * ```
+ * 方案 2.1 最终版：延迟构建方案（ViewTarget + TargetViewAdapter）
  */
-
-import type { Node, Component } from 'cc';
-import type { BindingOptions, Path, PathValue, BatchBindingItem } from '@bl-framework/mvvm';
-import type { CocosNode, CocosComponent } from '../types';
-import { CocosViewAdapter } from '../adapters/CocosViewAdapter';
-import { CocosIfDirective } from '../directives/CocosIfDirective';
-import { CocosOnDirective } from '../directives/CocosOnDirective';
-import { CocosForDirective } from '../directives/CocosForDirective';
-import type { ViewModel } from '@bl-framework/mvvm';
-import type { DecoratorBinding } from '../components/MVVMComponent';
+import type { ViewModel, Path, PathValue, BindingOptions, BatchBindingItem, DataBinding } from '@bl-framework/mvvm';
+import type { ViewTarget } from '../types/view-target';
+import { TargetViewAdapter } from '../adapters/TargetViewAdapter';
 
 /**
- * 绑定构建器选项
+ * 绑定项配置
  */
-export interface BindingBuilderOptions {
-    /** 是否自动创建视图适配器 */
-    autoCreateAdapter?: boolean;
+type AnyPath<T> = Path<T> & string;
+
+interface BindingItem<T, P extends AnyPath<T>> {
+    path: P;
+    target: ViewTarget<any>;
+    options?: BindingOptions<PathValue<T, P>, any>;
+    targetId?: string; // 由 addTarget 返回的 targetId
 }
 
 /**
- * 绑定构建器
- * 
- * 提供类型安全的流畅 API 来构建数据绑定、事件绑定等
- * 
- * @template T 数据类型
- * 
- * @example
- * ```typescript
- * interface PlayerData {
- *     name: string;
- *     stats: { health: number };
- * }
- * 
- * const builder = new BindingBuilder<PlayerData>(viewModel, node);
- * builder
- *     .bind('name', label)              // ✅ 类型安全
- *     .bind('stats.health', label)      // ✅ 类型安全
- *     .build();
- * ```
+ * 绑定构建器（方案 2.1 - 最终推荐版）
  */
 export class BindingBuilder<T> {
     private viewModel: ViewModel<T>;
-    private viewAdapter?: CocosViewAdapter;
-    private bindings: Array<{
-        path: Path<T> & string;
-        target: CocosNode | CocosComponent | string;
-        property?: string;
-        componentType?: string;
-        options?: BindingOptions<any>;
-    }> = [];
-    private events: Array<{
-        event: string;
-        target: CocosNode | CocosComponent | string;
-        handler: string | Function;
-    }> = [];
-    private conditions: Array<{
-        path: string;
-        target: CocosNode | string; // 支持字符串属性名
-    }> = [];
-    private lists: Array<{
-        path: string;
-        container: CocosNode | string; // 支持节点或属性名
-        template: CocosNode | string; // 支持节点或属性名
-        key?: string | ((item: any, index: number) => string | number);
-    }> = [];
-    private rootNode: CocosNode;
-    private componentInstance?: any; // 组件实例，用于解析属性名
+    private items: BindingItem<T, AnyPath<T>>[] = [];
     
-    constructor(viewModel: ViewModel<T>, rootNode: CocosNode, viewAdapter?: CocosViewAdapter, componentInstance?: any) {
+    constructor(viewModel: ViewModel<T>) {
         this.viewModel = viewModel;
-        this.rootNode = rootNode;
-        this.viewAdapter = viewAdapter;
-        this.componentInstance = componentInstance;
     }
     
     /**
      * 类型安全的数据绑定方法
      * 
      * @template P 路径类型（从 Path<T> 推断）
+     * @template TV 视图值类型（从 ViewTarget 推断）
      * @param path 数据路径（类型安全）
-     * @param target 目标节点、组件或属性名
-     * @param property 属性名称（可选）
-     * @param options 绑定选项（可选，值类型自动推断）
+     * @param target 视图目标适配器（ViewTarget）
+     * @param options 绑定选项（可选，TViewValue 类型从 target 推断）
      * @returns this（支持链式调用）
-     * 
-     * @example
-     * ```typescript
-     * interface PlayerData {
-     *     name: string;
-     *     stats: { health: number };
-     * }
-     * 
-     * const builder = new BindingBuilder<PlayerData>(viewModel, node);
-     * 
-     * // 类型安全：IDE 自动补全，编译时检查
-     * builder.bind('name', label);              // ✅
-     * builder.bind('stats.health', label, 'string', {
-     *     converter: (health) => `HP: ${health}` // ✅ health: number（自动推断）
-     * });
-     * 
-     * // ❌ 类型错误：编译时检查
-     * // builder.bind('nam', label);            // ❌ TypeScript 错误
-     * // builder.bind('stats.hp', label);       // ❌ TypeScript 错误
-     * ```
      */
-    bind<P extends Path<T> & string>(
+    bind<P extends AnyPath<T>, TV>(
         path: P,
-        target: CocosNode | CocosComponent | string,
-        property?: string,
-        options?: BindingOptions<PathValue<T, P>>
+        target: ViewTarget<TV>,
+        options?: BindingOptions<PathValue<T, P>, TV>
     ): this {
-        this.bindings.push({
-            path,
-            target,
-            property,
-            componentType: property ? this._inferComponentType(target) : undefined,
-            options
-        });
+        this.items.push({ path, target, options } as any);
         return this;
     }
     
     /**
-     * 添加事件绑定
+     * 构建所有绑定
      * 
-     * @param event 事件名称
-     * @param target 目标节点、组件或属性名
-     * @param handler 处理函数或方法名
-     */
-    on(
-        event: string,
-        target: CocosNode | CocosComponent | string,
-        handler: string | Function
-    ): this {
-        this.events.push({ event, target, handler });
-        return this;
-    }
-    
-    /**
-     * 添加条件渲染
+     * @returns { bindings: DataBinding 数组; view: TargetViewAdapter }
      * 
-     * @param path 数据路径
-     * @param target 目标节点
-     */
-    if(path: string, target: CocosNode): this {
-        this.conditions.push({ path, target });
-        return this;
-    }
-    
-    /**
-     * 添加列表渲染
+     * 注意：build() 只允许调用一次
+     * 如果要重新 build：新建 builder 或 builder.clear() 重新配置
      * 
-     * @param path 数据路径
-     * @param container 容器节点或属性名
-     * @param template 模板节点或属性名
-     * @param key 项的唯一键字段名或函数
+     * ⚠️ **重要变更**：
+     * - ✅ 允许同 path 多个 target（不再检测重复 path）
+     * - ✅ 每个 binding 都有 sourceId（用于多 input 防回环）
+     * - ⚠️ two-way 绑定必须带 sourceId guard（否则禁止多 input）
      */
-    for(
-        path: string,
-        container: CocosNode | string,
-        template: CocosNode | string,
-        key?: string | ((item: any, index: number) => string | number)
-    ): this {
-        this.lists.push({ 
-            path, 
-            container, 
-            template, 
-            key 
-        });
-        return this;
-    }
-    
-    /**
-     * 从装饰器元数据构建绑定
-     * 
-     * @param bindings 装饰器绑定配置
-     * @param events 装饰器事件配置
-     * @param conditions 装饰器条件配置
-     * @param lists 装饰器列表配置
-     */
-    fromDecorators(
-        bindings: DecoratorBinding[],
-        events: Array<{
-            event: string;
-            target: string;
-            handler?: string | Function;
-            useCapture?: boolean;
-        }>,
-        conditions: Array<{
-            path: string;
-            target: string;
-        }>,
-        lists: Array<{
-            path: string;
-            container: string;
-            template: string;
-            key?: string | ((item: any, index: number) => string | number);
-        }>
-    ): this {
-        // 处理数据绑定（使用类型断言，因为装饰器路径在编译时是 string，但运行时应该是有效的 Path<T>）
-        bindings.forEach(binding => {
-            this.bind(
-                binding.path as any as Path<T> & string,
-                binding.target, // 属性名，会在 build 时解析
-                binding.property,
-                {
-                    mode: binding.mode,
-                    converter: binding.converter,
-                    reverseConverter: binding.reverseConverter,
-                    validator: binding.validator
-                } as any
-            );
-            // 更新 componentType（如果提供了）
-            const lastBinding = this.bindings[this.bindings.length - 1];
-            if (lastBinding && binding.componentType) {
-                lastBinding.componentType = binding.componentType;
-            }
-        });
+    build(): { bindings: DataBinding<T, any, any>[]; view: TargetViewAdapter } {
+
+        // ✅ **规则变更**：不再禁止同 path 多个 target
+        // 允许同 path 绑定多个 ViewTarget（display/input 都可）
         
-        // 处理事件绑定
-        events.forEach(event => {
-            this.on(event.event, event.target, event.handler || '');
-        });
+        // 创建共享的 TargetViewAdapter
+        const view = new TargetViewAdapter();
         
-        // 处理条件渲染
-        conditions.forEach(condition => {
-            this.conditions.push({
-                path: condition.path,
-                target: condition.target as any // 属性名，会在 build 时解析
-            });
-        });
-        
-        // 处理列表渲染
-        this.lists.push(...lists);
-        
-        return this;
-    }
-    
-    /**
-     * 构建所有绑定（使用批量绑定 API）
-     */
-    build(): void {
-        // 确保视图适配器存在
-        if (!this.viewAdapter) {
-            this.viewAdapter = new CocosViewAdapter({
-                rootNode: this.rootNode
-            });
+        // 先把所有 target 注册进 adapter，获取 targetId
+        for (const item of this.items) {
+            const targetId = view.addTarget(item.path, item.target);
+            item.targetId = targetId;
         }
         
-        // 处理视图适配器映射（在批量绑定前）
-        this.bindings.forEach(binding => {
-            if (typeof binding.target === 'string') {
-                this.viewAdapter!.addMapping({
-                    path: binding.target,
-                    viewPath: binding.path,
-                    componentType: binding.componentType,
-                    propertyName: binding.property
-                });
-            }
-        });
+        // ⚠️ **风险控制**：如果 build 中途 throw，需要确保不会残留 UI 事件监听或 watcher
+        // 策略：先创建所有 bindings，再标记 built，确保原子性
+        let createdBindings: DataBinding<T, any, any>[] = [];
         
-        // 使用批量绑定 API
-        if (this.bindings.length > 0) {
-            const bindingsConfig: Partial<Record<Path<T> & string, BatchBindingItem<T, Path<T> & string>>> = {};
-            this.bindings.forEach(binding => {
-                bindingsConfig[binding.path] = {
-                    view: this.viewAdapter!,
-                    options: binding.options
-                };
-            });
+        try {
+            // ⚠️ **重要**：由于需要传递 sourceId，不能使用 bindMany（bindMany 不支持 sourceId）
+            // 改用逐个 bind，并为每个 binding 传递对应的 targetId 作为 sourceId
+            for (const item of this.items) {
+                const binding = this.viewModel.bind(
+                    item.path,
+                    view,
+                    item.options,
+                    item.targetId // 传递 targetId 作为 sourceId
+                );
+                createdBindings.push(binding);
+            }
             
-            // 批量创建绑定
-            this.viewModel.bindMany(
-                bindingsConfig as Record<Path<T> & string, BatchBindingItem<T, Path<T> & string>>
-            );
-        }
-        
-        // 处理事件绑定
-        this.events.forEach(event => {
-            this._processEvent(event);
-        });
-        
-        // 处理条件渲染
-        this.conditions.forEach(condition => {
-            this._processCondition(condition);
-        });
-        
-        // 处理列表渲染
-        this.lists.forEach(list => {
-            this._processList(list);
-        });
-    }
-    
-    /**
-     * 处理事件绑定
-     */
-    private _processEvent(event: {
-        event: string;
-        target: CocosNode | CocosComponent | string;
-        handler: string | Function;
-    }): void {
-        const target = this._resolveTarget(event.target);
-        if (!target) {
-            console.warn(`[BindingBuilder] Target not found for event: ${event.event}`);
-            return;
-        }
-        
-        // 创建事件指令
-        const reactive = this.viewModel.reactive;
-        const directive = new CocosOnDirective(reactive, event.event);
-        
-        // 解析处理函数
-        let handler: Function | undefined;
-        if (typeof event.handler === 'string') {
-            if (this.componentInstance) {
-                handler = this.componentInstance[event.handler];
-                if (handler && typeof handler === 'function') {
-                    handler = handler.bind(this.componentInstance);
-                }
-            } else {
-                handler = (this as any)[event.handler]?.bind(this);
+            return { bindings: createdBindings, view };
+        } catch (error) {
+            // build 失败时的半成品清理策略
+            // 1. 销毁已创建的 bindings（如果有）
+            for (const binding of createdBindings) {
+                binding.destroy();
             }
-        } else if (typeof event.handler === 'function') {
-            handler = this.componentInstance 
-                ? event.handler.bind(this.componentInstance)
-                : event.handler;
+            
+            // 2. 销毁已创建的 view（会解绑所有已注册的 onChange）
+            view.destroy();
+            
+            // 4. 重新抛出错误
+            throw error;
         }
-        
-        if (!handler || typeof handler !== 'function') {
-            console.warn(`[BindingBuilder] Event handler not found: ${event.handler}`);
-            return;
-        }
-        
-        // 判断 target 是 Node 还是 Component
-        // Component 有 node 属性，Node 没有
-        const isComponent = (target as any).node !== undefined;
-        const node = isComponent ? (target as any).node : target;
-        const component = isComponent ? (target as CocosComponent) : undefined;
-        
-        directive.execute({
-            node: node as CocosNode,
-            component: component,
-            eventName: event.event,
-            handler: handler as (...args: any[]) => void
-        });
     }
     
     /**
-     * 处理条件渲染
+     * 清空配置（不自动 destroy 外部资源）
+     * 
+     * ⚠️ **重要**：clear() 只清空配置，不负责销毁外部资源（bindings/view 的销毁交给 MVVMComponent）
+     * 
+     * **使用场景**：
+     * - 推荐：builder 只用于 MVVMComponent 管理场景
+     * - 独立使用：如需独立使用 builder，必须在 clear() 前手动销毁当前 bindings 和 view
+     * 
+     * 重新 enable：builder.clear(); 重新 bind...; build()
      */
-    private _processCondition(condition: {
-        path: string;
-        target: CocosNode | string;
-    }): void {
-        const target = this._resolveTarget(condition.target);
-        if (!target) {
-            console.warn(`[BindingBuilder] Target not found for condition: ${condition.path}`);
-            return;
-        }
-        
-        const reactive = this.viewModel.reactive;
-        const directive = new CocosIfDirective(reactive, condition.path);
-        directive.execute({
-            node: target as CocosNode,
-            path: condition.path
-        });
-    }
-    
-    /**
-     * 处理列表渲染
-     */
-    private _processList(list: {
-        path: string;
-        container: CocosNode | string;
-        template: CocosNode | string;
-        key?: string | ((item: any, index: number) => string | number);
-    }): void {
-        const container = this._resolveTarget(list.container);
-        const template = this._resolveTarget(list.template);
-        
-        if (!container || !template) {
-            console.warn(`[BindingBuilder] Container or template not found for list: ${list.path}`);
-            return;
-        }
-        
-        const reactive = this.viewModel.reactive;
-        const directive = new CocosForDirective(reactive, list.path);
-        
-        const itemKey = typeof list.key === 'string' 
-            ? (item: any) => item[list.key as string]
-            : list.key;
-        
-        directive.execute({
-            containerNode: container as CocosNode,
-            itemTemplate: template as CocosNode,
-            path: list.path,
-            itemKey: itemKey
-        });
-    }
-    
-    /**
-     * 解析目标（从字符串属性名解析为实际对象）
-     */
-    private _resolveTarget(target: CocosNode | CocosComponent | string): CocosNode | CocosComponent | null {
-        if (typeof target === 'string') {
-            // 从组件实例中获取属性
-            if (this.componentInstance) {
-                return this.componentInstance[target] || null;
-            }
-            // 如果没有组件实例，尝试从 this 获取（向后兼容）
-            return (this as any)[target] || null;
-        }
-        return target;
-    }
-    
-    /**
-     * 推断组件类型
-     */
-    private _inferComponentType(target: CocosNode | CocosComponent | string): string | undefined {
-        // 这里可以根据实际情况推断组件类型
-        // 暂时返回 undefined，由用户指定
-        return undefined;
-    }
-    
-    /**
-     * 获取视图适配器
-     */
-    getViewAdapter(): CocosViewAdapter | undefined {
-        return this.viewAdapter;
+    clear(): void {
+        this.items.length = 0;
     }
 }
-

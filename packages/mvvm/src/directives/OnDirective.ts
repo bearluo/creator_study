@@ -52,14 +52,6 @@ export class OnDirective extends Directive {
         // 如果 handlerPath 存在，监听变化
         if (this.handlerPath) {
             this.watcher = this.createWatcher(
-                (key, newValue, oldValue, ctx) => {
-                    // 当处理器变化时重新绑定
-                    if (String(key) === this.handlerPath || 
-                        (this.handlerPath && this.handlerPath.startsWith(String(key) + '.'))) {
-                        this._unbindEvent(ctx);
-                        this._bindEvent(ctx);
-                    }
-                },
                 (ctx) => {
                     // 运行回调：重新绑定
                     this._unbindEvent(ctx);

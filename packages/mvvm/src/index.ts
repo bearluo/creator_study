@@ -47,9 +47,7 @@ export { DataBinding } from './binding/DataBinding';
 export { BindingManager } from './binding/BindingManager';
 
 // ==================== 工具模块 ====================
-
-export { Command, ICommand } from './utils/Command';
-export { Computed } from './utils/Computed';
+// (已移除)
 
 // ==================== 指令模块 ====================
 
@@ -73,8 +71,6 @@ import { Watcher } from './reactive/Watcher';
 import { DependencyTracker } from './reactive/DependencyTracker';
 import { DataBinding } from './binding/DataBinding';
 import { BindingManager } from './binding/BindingManager';
-import { Command } from './utils/Command';
-import { Computed } from './utils/Computed';
 import { Directive } from './directives/Directive';
 import { IfDirective } from './directives/IfDirective';
 import { ForDirective } from './directives/ForDirective';
@@ -99,10 +95,6 @@ export const MVVM = {
     // 绑定
     DataBinding,
     BindingManager,
-    
-    // 工具
-    Command,
-    Computed,
     
     // 指令
     Directive,

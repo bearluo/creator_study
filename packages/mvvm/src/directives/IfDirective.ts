@@ -46,13 +46,6 @@ export class IfDirective extends Directive {
         
         // 创建观察者，监听变化
         this.watcher = this.createWatcher(
-            (key, newValue, oldValue, ctx) => {
-                // 当路径对应的属性变化时更新
-                if (String(key) === this.path || this.path.startsWith(String(key) + '.')) {
-                    const value = this._getValue(this.reactive.value, this.path);
-                    this._updateVisibility(ctx.element, Boolean(value));
-                }
-            },
             (ctx) => {
                 // 运行回调：重新计算并更新
                 const value = this._getValue(this.reactive.value, this.path);

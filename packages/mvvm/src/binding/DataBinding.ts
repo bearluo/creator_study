@@ -48,16 +48,20 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
     private viewUnsubscribe?: () => void;
     private syncingToView = false;
     private syncingToSource = false;
+    /** 源标识（用于多 input 防回环） */
+    private sourceId?: string;
     
     constructor(
         reactive: Reactive<TData>,
         view: IView,
         path: string,
-        options?: BindingOptions<TValue, TViewValue>
+        options?: BindingOptions<TValue, TViewValue>,
+        sourceId?: string
     ) {
         this.reactive = reactive;
         this.view = view;
         this.path = path;
+        this.sourceId = sourceId;
         this.options = {
             mode: options?.mode || 'one-way',
             converter: options?.converter || ((v: TValue) => v as unknown as TViewValue),
@@ -75,8 +79,6 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
     private _setupBinding(): void {
         // 创建观察者
         this.watcher = new Watcher(
-            (key, newValue, oldValue) => {
-            },
             () => {
                 // 运行回调：更新视图 不支持 one-way-to-source 模式
                 if (this.options.mode !== 'one-way-to-source') {
@@ -101,10 +103,16 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
      * 设置视图监听器（双向绑定）
      */
     private _setupViewListener(): void {
-        // 监听视图的 change 事件
-        this.viewUnsubscribe = this.view.on('change', (path: string, value: any) => {
+        // 监听视图的 change 事件（支持三参：path, value, sourceId）
+        this.viewUnsubscribe = this.view.on('change', (path: string, value: any, sourceId?: string) => {
             if (path !== this.path) return;
             if (this.syncingToView) return; // 防：view.update 引起的 change
+            
+            // ⚠️ **多 input 防回环**：如果 sourceId 等于自己的 sourceId，说明是自己写回引起的，忽略
+            if (this.sourceId && sourceId === this.sourceId) {
+                return; // 防止回环
+            }
+            
             this._updateSource(value);
         });
     }

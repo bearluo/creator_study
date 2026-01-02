@@ -41,19 +41,14 @@ export abstract class Directive {
     
     /**
      * 创建观察者
-     * @param updateCallback 更新回调函数
      * @param runCallback 运行回调函数
      * @param context 上下文
      */
     protected createWatcher(
-        updateCallback: (key: string | symbol, newValue: any, oldValue: any, context: any) => void,
         runCallback: (context: any) => void,
         context: any
     ): WatcherImpl {
         const watcher = new WatcherImpl(
-            (key, newValue, oldValue) => {
-                updateCallback(key, newValue, oldValue, context);
-            },
             () => {
                 runCallback(context);
             }
