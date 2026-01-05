@@ -1,13 +1,17 @@
 # 活动上下文
 
 ## 当前任务
-**任务**: mvvm-creator 重新设计 (MVVM-CREATOR-005)  
-**模式**: BUILD (Code Implementation)  
+**任务**: mvvm-creator 装饰器/绑定声明语法糖 (MVVM-CREATOR-006)  
+**模式**: CREATIVE (Design Decisions - 自定义 Helper 扩展)  
 **日期**: 2025-01-XX  
-**状态**: ✅ BUILD 模式完成（核心实现完成，构建成功）
+**状态**: ✅ CREATIVE 模式完成（包含自定义 Helper 扩展，推荐进入 BUILD 模式）
 
-## 任务目标
-清空现有的 `@bl-framework/mvvm-creator` 包，基于新的 `@bl-framework/mvvm` 框架重新设计一个简洁、类型安全、易用的 Cocos Creator 集成方案。
+## 最近完成的任务
+
+### MVVM-CREATOR-005: mvvm-creator 清空并重新设计
+- **状态**: ✅ COMPLETED & ARCHIVED
+- **归档文档**: `memory-bank/archive/archive-mvvm-creator-005.md`
+- **完成时间**: 2025-01-XX
 
 ## 当前阶段
 CREATIVE 模式 - 设计决策（✅ 完成）

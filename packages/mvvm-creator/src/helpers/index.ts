@@ -3,7 +3,6 @@
  */
 export {
     toLabelText,
-    toLabelFmt,
     toProgress,
     toActive,
     toEditBox,

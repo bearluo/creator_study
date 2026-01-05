@@ -125,10 +125,9 @@ export interface IView {
     /** 
      * 监听视图事件
      * 
-     * change 事件回调签名：`(path: string, value: any, sourceId?: string) => void`
+     * change 事件回调签名：`(path: string, value: any) => void`
      * - path: 数据路径
      * - value: 值
-     * - sourceId: 源标识（可选，用于多 input 防回环）
      */
     on(event: string, callback: (...args: any[]) => void): () => void;
     /** 销毁视图 */
@@ -180,8 +179,7 @@ export interface IViewModel<T = any> {
     bind<P extends Path<T> & string>(
         path: P,
         view: IView,
-        options?: BindingOptions<PathValue<T, P>>,
-        sourceId?: string
+        options?: BindingOptions<PathValue<T, P>>
     ): DataBinding<T, PathValue<T, P>>;
     /** 
      * 批量绑定方法

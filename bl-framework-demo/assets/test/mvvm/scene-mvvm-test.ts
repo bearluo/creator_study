@@ -3,7 +3,6 @@
  * 在 Cocos Creator 场景中运行 MVVM 测试
  */
 import { _decorator, Component, Node, Label, EditBox, ProgressBar } from 'cc';
-import { MVVMTest } from './MVVMTest';
 import { PlayerMVVMComponent } from './PlayerMVVMComponent';
 
 const { ccclass, property } = _decorator;
@@ -13,10 +12,6 @@ const { ccclass, property } = _decorator;
  */
 @ccclass('SceneMVVMTest')
 export class SceneMVVMTest extends Component {
-    /** 是否运行基础测试 */
-    @property({ tooltip: '是否运行基础测试' })
-    runBasicTest: boolean = true;
-
     /** 是否运行组件测试 */
     @property({ tooltip: '是否运行组件测试' })
     runComponentTest: boolean = true;
@@ -38,8 +33,8 @@ export class SceneMVVMTest extends Component {
     start() {
         if (this.autoRun && !this.hasRun) {
             // 延迟执行测试，确保场景完全加载
-            this.scheduleOnce(() => {
-                this.runTests();
+            this.scheduleOnce(async () => {
+                await this.runTests();
             }, this.testDelay);
         }
     }
@@ -47,7 +42,7 @@ export class SceneMVVMTest extends Component {
     /**
      * 运行所有测试
      */
-    runTests(): void {
+    async runTests(): Promise<void> {
         if (this.hasRun) {
             console.warn('测试已经运行过，跳过');
             return;
@@ -57,15 +52,9 @@ export class SceneMVVMTest extends Component {
         console.log('开始运行 MVVM 场景测试');
         console.log('========================================\n');
 
-        if (this.runBasicTest) {
-            console.log('>>> 运行基础测试 <<<');
-            MVVMTest.runAll();
-            console.log('\n');
-        }
-
         if (this.runComponentTest && this.testNode) {
             console.log('>>> 运行组件测试 <<<');
-            this.runComponentTests();
+            await this.runComponentTests();
             console.log('\n');
         }
 
@@ -79,7 +68,7 @@ export class SceneMVVMTest extends Component {
     /**
      * 运行组件测试
      */
-    private runComponentTests(): void {
+    private async runComponentTests(): Promise<void> {
         try {
             // 添加 PlayerMVVMComponent 到测试节点
             let playerComponent = this.testNode.getComponent(PlayerMVVMComponent);
@@ -182,14 +171,6 @@ export class SceneMVVMTest extends Component {
         } else {
             console.log('✅ 所有节点绑定成功');
         }
-    }
-
-    /**
-     * 手动运行基础测试
-     */
-    runBasicTests(): void {
-        console.log('>>> 手动运行基础测试 <<<');
-        MVVMTest.runAll();
     }
 }
 

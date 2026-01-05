@@ -27,33 +27,20 @@ export function toLabelText(label: Label | null): ViewTarget<string> {
 }
 
 /**
- * 创建 Label 目标适配器（带格式化，只 set，不 get）
- */
-export function toLabelFmt<T>(label: Label | null, fmt: (v: T) => string): ViewTarget<T> {
-    if (!label) {
-        throw new Error('[toLabelFmt] Label is null');
-    }
-    return {
-        set: (value: T) => {
-            label.string = fmt(value);
-        }
-        // 不提供 get，避免类型污染
-    };
-}
-
-/**
  * 创建 ProgressBar 目标适配器
+ * 
+ * ⚠️ **规范（固化）**：helper 内部会 clamp 到 0..1 范围，确保 ProgressBar.progress 始终有效
  */
 export function toProgress(
     progressBar: ProgressBar | null,
-    converter?: (value: number) => number
 ): ViewTarget<number> {
     if (!progressBar) {
         throw new Error('[toProgress] ProgressBar is null');
     }
     return {
         set: (value: number) => {
-            progressBar.progress = converter ? converter(value) : value;
+            // 规范（固化）：内部 clamp 到 0..1 范围
+            progressBar.progress = Math.max(0, Math.min(1, value));
         },
         get: () => progressBar.progress
     };

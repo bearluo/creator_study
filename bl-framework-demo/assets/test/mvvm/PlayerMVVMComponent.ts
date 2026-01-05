@@ -5,10 +5,9 @@
 import { _decorator, Label, EditBox, ProgressBar, Node } from 'cc';
 import { MVVMComponent } from '@bl-framework/mvvm-creator';
 import { Model, ViewModel } from '@bl-framework/mvvm';
-import { toLabelText, toLabelFmt, toEditBox, toProgress, toActive } from '@bl-framework/mvvm-creator';
+import { toLabelText, toEditBox, toProgress, toActive } from '@bl-framework/mvvm-creator';
 
 const { ccclass, property } = _decorator;
-
 /**
  * 玩家数据接口
  */
@@ -70,11 +69,11 @@ export class PlayerMVVMComponent extends MVVMComponent<PlayerData> {
         // - 'playerName' 绑定到 nameInput 和 nameInput2（两个 input，two-way）
         this.bindingBuilder
             .bind('name', toLabelText(this.nameLabel))
-            .bind('level', toLabelFmt(this.levelLabel, (v: number) => `Lv.${v}`))
-            .bind('health', toLabelFmt(this.healthLabel, (v: number) => `${v}/${this.viewModel.reactive.value.maxHealth}`))
-            .bind('health', toProgress(this.healthBar, (v: number) => v / this.viewModel.reactive.value.maxHealth)) // 同 path，多个 display
+            .bind('level', toLabelText(this.levelLabel), { converter: (v: number) => `Lv.${v}` })
+            .bind('health', toLabelText(this.healthLabel), { converter: (v: number) => `${v}/${this.viewModel.reactive.value.maxHealth}` })
+            .bind('health', toProgress(this.healthBar), { converter: (v: number) => v / this.viewModel.reactive.value.maxHealth }) // 同 path，多个 display
             .bind('playerName', toEditBox(this.nameInput), { mode: 'two-way' })
-            .bind('playerName', toEditBox(this.nameInput2), { mode: 'two-way' }) // 同 path，多个 input（sourceId 防回环）
+            .bind('playerName', toEditBox(this.nameInput2), { mode: 'two-way' }) // 同 path，多个 input（silentDepth 防回环）
             .bind('isDead', toActive(this.deadMask));
     }
 

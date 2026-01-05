@@ -87,9 +87,8 @@ export class ViewModel<T = any> implements IViewModel<T> {
         path: P,
         view: IView,
         options?: BindingOptions<PathValue<T, P>>,
-        sourceId?: string
     ): DataBinding<T, PathValue<T, P>> {
-        const binding = new DataBinding<T, PathValue<T, P>>(this._reactive, view, path, options, sourceId);
+        const binding = new DataBinding<T, PathValue<T, P>>(this._reactive, view, path, options);
         this.bindings.push(binding);
         return binding;
     }
@@ -128,8 +127,7 @@ export class ViewModel<T = any> implements IViewModel<T> {
         const result = new Map<P, DataBinding<T, PathValue<T, P>>>();
         
         for (const [path, config] of Object.entries(bindings) as [P, BatchBindingItem<T, P>][]) {
-            // bindMany 时，sourceId 从 config 中获取（如果 View 支持传递 sourceId）
-            const binding = this.bind(path, config.view, config.options, (config as any).sourceId);
+            const binding = this.bind(path, config.view, config.options);
             result.set(path, binding);
         }
         
