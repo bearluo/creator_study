@@ -21,18 +21,18 @@
 - **位置**: `extensions/bl-framework/assets/events/`
 - **功能**: 全局事件通信
 
-## 行为树集成考虑
+## MVVM 集成考虑
 
-### 与 ECS 的集成
-- 行为树可以作为 ECS 的一个 System
-- 行为树节点可以作为 Component
-- Entity 可以拥有行为树 Component
+### 与 Cocos Creator 的集成
+- `MVVMComponent` 继承自 `cc.Component`
+- 使用 `@property` 装饰器声明视图组件
+- 使用 `BindingBuilder` 进行数据绑定
 
 ### 技术选型
-- 自研 vs 第三方库
-- 节点类型设计
-- 执行策略（同步/异步）
-- 可视化编辑器支持
+- 响应式系统：基于 Proxy 的依赖追踪
+- 类型安全：TypeScript 模板字面量类型
+- 绑定方式：`bind()` 和 `bindConfig()` 两种方式
+- 视图适配：`ViewTarget` 接口统一视图操作
 
 ## 参考资源
 - 行为树设计模式

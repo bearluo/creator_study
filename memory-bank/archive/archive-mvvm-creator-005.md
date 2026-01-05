@@ -22,10 +22,10 @@
 **核心成果**：
 - ✅ 完全重新设计的架构（清空旧实现）
 - ✅ 类型安全的 API（充分利用 Path<T> 和 PathValue<T, P>）
-- ✅ 支持同 path 多个 target 绑定（sourceId 防回环机制）
+- ✅ 支持同 path 多个 target 绑定（silentDepth 防回环机制）
 - ✅ 创建/绑定分离的生命周期管理
 - ✅ 简化的 DependencyTracker（移除 pathStack 双系统）
-- ✅ 完善的防回环机制（两层保护）
+- ✅ 完善的防回环机制（两层保护：silentDepth + DataBinding 内部保护）
 
 ---
 
@@ -63,14 +63,14 @@
 1. **职责分离**：Builder 负责路径解析和构建，Adapter 负责映射和更新，Component 负责生命周期
 2. **性能优化**：所有重活（路径解析）在 Builder 阶段完成，Adapter 的 update/get 是 O(1)
 3. **类型安全**：充分利用 TypeScript 类型系统（Path<T>、PathValue<T, P>）
-4. **防回环机制**：两层保护（ViewTarget 的 silentDepth + DataBinding 的 sourceId guard）
+4. **防回环机制**：两层保护（ViewTarget 的 silentDepth + DataBinding 的内部保护）
 
 **关键组件**：
 
 1. **TargetViewAdapter**：共享的 IView 实现
    - 聚合多个 ViewTarget 实例
    - 支持一个 path 多个 target
-   - 统一事件总线（change 事件，支持 sourceId）
+   - 统一事件总线（change 事件）
    - O(1) 的 Map 查找
 
 2. **CocosViewAdapter**：实现 IView 接口
@@ -83,7 +83,7 @@
    - 链式 API 设计
    - 延迟构建（延迟到 build() 调用）
    - 支持同 path 多个 target
-   - 为每个 binding 传递 sourceId
+   - 使用 silentDepth 机制防止回环
 
 4. **MVVMComponent**：Cocos Creator 组件的 MVVM 基类
    - 创建/绑定分离的生命周期管理
@@ -113,11 +113,11 @@
    - Adapter 永远 O(1)
    - 绑定清理必须落到 DataBinding.destroy()
 
-2. **sourceId 机制**：
+2. **防回环机制**：
    - 允许同 path 多个 target（display/input 都可）
-   - two-way 必须带 sourceId guard
-   - change 事件必须带 sourceId
-   - DataBinding 增加 sourceId 字段，用于防回环
+   - ViewTarget 使用 silentDepth 计数器防止同步回环
+   - DataBinding 内部保护防止异步回环
+   - 两层保护确保不会出现死循环
 
 3. **生命周期管理**：
    - onLoad：只做一次性的"结构准备"
@@ -149,16 +149,15 @@
 - `packages/mvvm-creator/src/index.ts` - 更新导出
 - `packages/mvvm/src/reactive/DependencyTracker.ts` - 简化实现（移除 pathStack）
 - `packages/mvvm/src/reactive/Reactive.ts` - 移除 pushPath/popPath 调用
-- `packages/mvvm/src/core/types.ts` - 更新 IView.on 签名（支持 sourceId）
-- `packages/mvvm/src/core/ViewModel.ts` - 更新 bind 方法（支持 sourceId）
-- `packages/mvvm/src/binding/DataBinding.ts` - 更新构造函数和 _setupViewListener（支持 sourceId）
+- `packages/mvvm/src/core/types.ts` - 更新 IView.on 签名
+- `packages/mvvm/src/core/ViewModel.ts` - 更新 bind 方法
+- `packages/mvvm/src/binding/DataBinding.ts` - 更新构造函数和 _setupViewListener
 
 ### 关键实现细节
 
 1. **TargetViewAdapter**：
    - 使用 `Map<string, TargetItem[]>` 存储多个 target
-   - 为每个 target 生成唯一的 targetId（使用 uuid）
-   - onChange 回调包装，传递 sourceId
+   - onChange 回调包装，使用 silentDepth 防止回环
    - destroy() 方法安全迭代，防止 map 修改问题
 
 2. **CocosViewAdapter**：
@@ -170,7 +169,7 @@
 3. **BindingBuilder**：
    - 使用数组存储 binding 配置（避免 Record 的"后写覆盖"问题）
    - build() 时检测重复 path（已移除，因为允许同 path 多个 target）
-   - 为每个 binding 传递 targetId 作为 sourceId
+   - 使用 silentDepth 机制防止回环
    - build() 返回 `{ bindings: DataBinding[], view: TargetViewAdapter }`
 
 4. **MVVMComponent**：
@@ -239,7 +238,7 @@
    - 确保各模块职责清晰
 
 4. **最小改动方案的优势**
-   - sourceId 机制的实现采用最小改动方案
+   - silentDepth 机制的实现采用最小改动方案
    - 既满足需求又保持代码简洁
    - 避免过度设计
 

@@ -31,23 +31,24 @@
 - 复杂功能有 QUICK_START.md
 - API 文档使用 JSDoc 注释
 
-## 行为树系统需要遵循的模式
+## MVVM 系统需要遵循的模式
 
-### 1. 与 ECS 集成模式
-- 使用 Component + System 模式
-- BehaviorTreeComponent 存储行为树实例
-- BehaviorTreeSystem 负责执行更新
+### 1. 数据绑定模式
+- 使用 `BindingBuilder` 进行类型安全的绑定
+- 支持 `bind()` 和 `bindConfig()` 两种方式
+- 使用 `ViewTarget` 接口抽象视图操作
 
-### 2. 节点设计模式
-- 节点基类使用抽象类
-- 节点状态使用枚举
-- 节点生命周期：onEnter -> onUpdate -> onExit
+### 2. 生命周期管理
+- `MVVMComponent` 基类管理生命周期
+- 创建/绑定分离：`onLoad` 创建，`onEnable` 绑定
+- 清理：`onDisable` 解绑，`onDestroy` 销毁
 
-### 3. 构建器模式
-- 使用 BehaviorTreeBuilder 链式构建
-- 支持流畅的 API 设计
+### 3. 类型安全
+- 使用 `Path<T>` 和 `PathValue<T, P>` 确保类型安全
+- 泛型 `BindingBuilder<T>` 提供编译时类型检查
+- `bindConfig()` 支持类型推断
 
-### 4. 数据共享
-- 使用 Blackboard 模式共享数据
-- 支持 Entity 数据访问
+### 4. 防回环机制
+- `silentDepth` 计数器防止同步回环
+- `DataBinding` 内部保护防止异步回环
 
