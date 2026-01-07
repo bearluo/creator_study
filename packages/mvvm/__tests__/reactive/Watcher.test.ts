@@ -3,43 +3,21 @@ import { Watcher } from '../../src/reactive/Watcher';
 describe('Watcher', () => {
     describe('基础功能', () => {
         it('应该创建 watcher', () => {
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             expect(watcher).toBeDefined();
         });
         
-        it('应该调用 update 回调', () => {
-            let called = false;
-            let receivedKey: string | symbol = '';
-            let receivedNewValue: any;
-            let receivedOldValue: any;
-            
-            const watcher = new Watcher(
-                (key, newValue, oldValue) => {
-                    called = true;
-                    receivedKey = key;
-                    receivedNewValue = newValue;
-                    receivedOldValue = oldValue;
-                },
-                () => {}
-            );
-            
-            watcher.update('name', 'Jane', 'John');
-            
-            expect(called).toBe(true);
-            expect(receivedKey).toBe('name');
-            expect(receivedNewValue).toBe('Jane');
-            expect(receivedOldValue).toBe('John');
+        it('应该可以创建没有回调的 watcher', () => {
+            const watcher = new Watcher();
+            expect(watcher).toBeDefined();
         });
         
         it('应该调用 run 回调', () => {
             let called = false;
             
-            const watcher = new Watcher(
-                () => {},
-                () => {
-                    called = true;
-                }
-            );
+            const watcher = new Watcher(() => {
+                called = true;
+            });
             
             watcher.run();
             
@@ -47,7 +25,7 @@ describe('Watcher', () => {
         });
         
         it('应该在 runCallback 为 undefined 时不抛出错误', () => {
-            const watcher = new Watcher(() => {});
+            const watcher = new Watcher();
             
             expect(() => {
                 watcher.run();
@@ -57,7 +35,7 @@ describe('Watcher', () => {
     
     describe('依赖管理', () => {
         it('应该添加依赖', () => {
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             
             watcher.addDependency('name');
             watcher.addDependency('age');
@@ -67,7 +45,7 @@ describe('Watcher', () => {
         });
         
         it('应该获取所有依赖', () => {
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             
             watcher.addDependency('name');
             watcher.addDependency('age');
@@ -79,7 +57,7 @@ describe('Watcher', () => {
         });
         
         it('应该清除依赖', () => {
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             
             watcher.addDependency('name');
             watcher.addDependency('age');
@@ -92,7 +70,7 @@ describe('Watcher', () => {
         });
         
         it('应该返回只读的依赖集合', () => {
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             watcher.addDependency('name');
             
             const deps = watcher.getDependencies();

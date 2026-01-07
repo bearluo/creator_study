@@ -3,6 +3,10 @@ import type { DataBinding as IDataBinding } from '../core/types';
 import { Reactive } from '../reactive/Reactive';
 import { Watcher } from '../reactive/Watcher';
 import { BindingError, ValidationError } from '../core/types';
+import { Debugger } from '../debug/Debugger';
+import { BindingDebugHook } from '../debug/hooks/BindingDebugHook';
+import { Logger, LogCategory } from '../debug/Logger';
+import { PerformanceMonitor } from '../debug/PerformanceMonitor';
 
 /**
  * 数据绑定
@@ -39,7 +43,7 @@ import { BindingError, ValidationError } from '../core/types';
  * ```
  */
 export class DataBinding<TData = any, TValue = any, TViewValue = any> implements IDataBinding<TData, TValue, TViewValue> {
-    private reactive: Reactive<TData>;
+    private reactive: IReactive<TData>;
     private view: IView;
     private path: string;
     private options: Required<Omit<BindingOptions<TValue, TViewValue>, 'onError'>> & { onError?: BindingOptions<TValue, TViewValue>['onError'] };
@@ -48,9 +52,10 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
     private viewUnsubscribe?: () => void;
     private syncingToView = false;
     private syncingToSource = false;
+    private debugHook?: BindingDebugHook;
     
     constructor(
-        reactive: Reactive<TData>,
+        reactive: IReactive<TData>,
         view: IView,
         path: string,
         options?: BindingOptions<TValue, TViewValue>,
@@ -66,7 +71,45 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
             ...(options?.onError && { onError: options.onError }),
         };
         
+        // 如果调试已启用，创建调试钩子
+        if (Debugger.isEnabled()) {
+            this.debugHook = new BindingDebugHook(this);
+            Debugger.registerHook(this, this.debugHook);
+        }
+        
         this._setupBinding();
+    }
+    
+    /**
+     * 获取绑定路径（用于调试）
+     * @internal
+     */
+    getPath(): string {
+        return this.path;
+    }
+    
+    /**
+     * 获取绑定模式（用于调试）
+     * @internal
+     */
+    getMode(): 'one-way' | 'two-way' | 'one-way-to-source' {
+        return this.options.mode;
+    }
+    
+    /**
+     * 获取视图（用于调试）
+     * @internal
+     */
+    getView(): IView {
+        return this.view;
+    }
+    
+    /**
+     * 检查绑定是否活跃（用于调试）
+     * @internal
+     */
+    getIsActive(): boolean {
+        return this.watcher !== null && this.unsubscribe !== undefined;
     }
     
     /**
@@ -114,6 +157,8 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
     private _updateView(value: any): void {
         if (this.options.mode === 'one-way-to-source') return;
         
+        const startTime = PerformanceMonitor.isTracking() ? performance.now() : 0;
+        
         try {
             // 验证
             if (this.options.validator && !this.options.validator(value)) {
@@ -140,13 +185,31 @@ export class DataBinding<TData = any, TValue = any, TViewValue = any> implements
             } finally {
                 this.syncingToView = false;
             }
+            
+            // 记录性能数据
+            if (PerformanceMonitor.isTracking() && startTime > 0) {
+                const duration = performance.now() - startTime;
+                PerformanceMonitor.recordBindingExecution(duration);
+            }
+            
+            Logger.debug(LogCategory.BINDING, `View updated`, {
+                path: this.path,
+                value: convertedValue
+            });
         } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            
+            Logger.error(LogCategory.BINDING, `View update failed`, {
+                path: this.path,
+                value,
+                error: err.message
+            });
+            
+            if (this.debugHook) {
+                this.debugHook.recordError(err, { path: this.path, value });
+            }
             if (this.options.onError) {
-                this.options.onError(
-                    error instanceof Error ? error : new Error(String(error)),
-                    this.path,
-                    value
-                );
+                this.options.onError(err, this.path, value);
             } else {
                 throw error;
             }

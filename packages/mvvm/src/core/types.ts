@@ -140,6 +140,8 @@ export interface IView {
 export interface IModel<T = any> {
     /** 数据（只读） */
     readonly data: T;
+    /** 响应式数据（只读） */
+    readonly reactive: IReactive<T>;
     /** 验证数据 */
     validate(): boolean;
     /** 序列化为 JSON */

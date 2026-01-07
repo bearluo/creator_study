@@ -1,6 +1,9 @@
-import type { IViewModel, IModel, IView, BindingOptions, Path, PathValue, BatchBindingItem, BindingConfig } from './types';
+import type { IViewModel, IModel, IView, BindingOptions, Path, PathValue, BatchBindingItem, BindingConfig, IReactive } from './types';
 import { Reactive } from '../reactive/Reactive';
 import { DataBinding } from '../binding/DataBinding';
+import { Debugger } from '../debug/Debugger';
+import { ViewModelDebugHook } from '../debug/hooks/ViewModelDebugHook';
+import { Logger, LogCategory } from '../debug/Logger';
 
 /**
  * 视图模型
@@ -32,12 +35,19 @@ import { DataBinding } from '../binding/DataBinding';
  */
 export class ViewModel<T = any> implements IViewModel<T> {
     protected _model: IModel<T>;
-    protected _reactive: Reactive<T>;
+    protected _reactive: IReactive<T>;
     private bindings: DataBinding<T, any, any>[] = [];
+    private debugHook?: ViewModelDebugHook;
     
     constructor(model: IModel<T>) {
         this._model = model;
-        this._reactive = new Reactive(model.data);
+        this._reactive = model.reactive;
+        
+        // 如果调试已启用，创建调试钩子
+        if (Debugger.isEnabled()) {
+            this.debugHook = new ViewModelDebugHook(this);
+            Debugger.registerHook(this, this.debugHook);
+        }
     }
     
     /**
@@ -50,7 +60,7 @@ export class ViewModel<T = any> implements IViewModel<T> {
     /**
      * 获取响应式数据
      */
-    get reactive(): Reactive<T> {
+    get reactive(): IReactive<T> {
         return this._reactive;
     }
     
@@ -88,8 +98,19 @@ export class ViewModel<T = any> implements IViewModel<T> {
         view: IView,
         options?: BindingOptions<PathValue<T, P>>,
     ): DataBinding<T, PathValue<T, P>> {
+        Logger.debug(LogCategory.VIEWMODEL, `Creating binding`, {
+            path,
+            mode: options?.mode || 'one-way'
+        });
+        
         const binding = new DataBinding<T, PathValue<T, P>>(this._reactive, view, path, options);
         this.bindings.push(binding);
+        
+        // 注册调试钩子
+        if (this.debugHook) {
+            this.debugHook.registerBinding(binding);
+        }
+        
         return binding;
     }
     
@@ -187,14 +208,31 @@ export class ViewModel<T = any> implements IViewModel<T> {
         const index = this.bindings.indexOf(binding);
         if (index !== -1) {
             this.bindings.splice(index, 1);
+            
+            // 注销调试钩子
+            if (this.debugHook) {
+                this.debugHook.unregisterBinding(binding);
+            }
+            
             binding.destroy();
         }
+    }
+    
+    /**
+     * 获取所有绑定（用于调试）
+     * @internal
+     */
+    getBindings(): ReadonlyArray<DataBinding<T, any, any>> {
+        return this.bindings;
     }
     
     /**
      * 销毁视图模型
      */
     destroy(): void {
+        if (this.debugHook) {
+            Debugger.unregisterHook(this);
+        }
         this.bindings.forEach(binding => binding.destroy());
         this.bindings = [];
     }

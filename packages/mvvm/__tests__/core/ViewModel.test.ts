@@ -187,5 +187,44 @@ describe('ViewModel', () => {
             });
         });
     });
+
+    describe('调试工具集成', () => {
+        beforeEach(() => {
+            const { Debugger } = require('../../src/debug/Debugger');
+            Debugger.disable();
+        });
+
+        it('应该在启用调试时创建调试钩子', () => {
+            const { Debugger } = require('../../src/debug/Debugger');
+            Debugger.enable();
+            
+            const model = new Model<TestData>({ name: 'John', age: 30 });
+            const viewModel = new ViewModel(model);
+            
+            const state = Debugger.getViewModelState(viewModel);
+            expect(state).toBeDefined();
+            expect(state.model.data).toEqual({ name: 'John', age: 30 });
+            
+            Debugger.disable();
+        });
+
+        it('应该追踪绑定状态', () => {
+            const { Debugger } = require('../../src/debug/Debugger');
+            Debugger.enable();
+            
+            const model = new Model<TestData>({ name: 'John', age: 30 });
+            const viewModel = new ViewModel(model);
+            const view = new TestView();
+            
+            viewModel.bind('name', view);
+            viewModel.bind('age', view);
+            
+            const state = Debugger.getViewModelState(viewModel);
+            expect(state.bindings.length).toBe(2);
+            expect(state.stats.bindingCount).toBe(2);
+            
+            Debugger.disable();
+        });
+    });
 });
 

@@ -37,23 +37,14 @@ describe('Reactive', () => {
     describe('依赖追踪', () => {
         it('应该追踪属性访问', () => {
             const reactive = new Reactive({ name: 'John', age: 30 });
-            let updateCount = 0;
-            let lastKey: string | symbol = '';
-            let lastNewValue: any;
-            let lastOldValue: any;
+            let runCount = 0;
+            let lastValue: any;
             
-            const watcher = new Watcher(
-                (key, newValue, oldValue) => {
-                    updateCount++;
-                    lastKey = key;
-                    lastNewValue = newValue;
-                    lastOldValue = oldValue;
-                },
-                () => {
-                    // 在 run 回调中访问属性以收集依赖
-                    const _ = reactive.value.name;
-                }
-            );
+            const watcher = new Watcher(() => {
+                runCount++;
+                // 在 run 回调中访问属性以收集依赖
+                lastValue = reactive.value.name;
+            });
             
             // 注册 watcher 以收集依赖
             const unsubscribe = reactive.watch(watcher);
@@ -64,10 +55,8 @@ describe('Reactive', () => {
             // 等待批量更新
             return new Promise<void>((resolve) => {
                 setTimeout(() => {
-                    expect(updateCount).toBeGreaterThan(0);
-                    expect(lastKey).toBe('name');
-                    expect(lastNewValue).toBe('Jane');
-                    expect(lastOldValue).toBe('John');
+                    expect(runCount).toBeGreaterThan(1); // 至少调用一次（初始）+ 一次（更新）
+                    expect(lastValue).toBe('Jane');
                     
                     unsubscribe();
                     resolve();
@@ -85,16 +74,12 @@ describe('Reactive', () => {
                 }
             });
             
-            let updateCount = 0;
-            const watcher = new Watcher(
-                (key) => {
-                    updateCount++;
-                },
-                () => {
-                    // 在 run 回调中访问嵌套属性以收集依赖
-                    const _ = reactive.value.user.profile.age;
-                }
-            );
+            let runCount = 0;
+            const watcher = new Watcher(() => {
+                runCount++;
+                // 在 run 回调中访问嵌套属性以收集依赖
+                const _ = reactive.value.user.profile.age;
+            });
             
             const unsubscribe = reactive.watch(watcher);
             
@@ -103,7 +88,7 @@ describe('Reactive', () => {
             
             return new Promise<void>((resolve) => {
                 setTimeout(() => {
-                    expect(updateCount).toBeGreaterThan(0);
+                    expect(runCount).toBeGreaterThan(1); // 至少调用一次（初始）+ 一次（更新）
                     unsubscribe();
                     resolve();
                 }, 10);
@@ -113,43 +98,36 @@ describe('Reactive', () => {
         it('应该只通知相关的 watcher', () => {
             const reactive = new Reactive({ name: 'John', age: 30 });
             
-            let nameUpdateCount = 0;
-            let ageUpdateCount = 0;
+            let nameRunCount = 0;
+            let ageRunCount = 0;
             
-            const nameWatcher = new Watcher(
-                (key) => {
-                    if (key === 'name') {
-                        nameUpdateCount++;
-                    }
-                },
-                () => {
-                    // 在 run 回调中访问 name 属性以收集依赖
-                    const _name = reactive.value.name;
-                }
-            );
+            const nameWatcher = new Watcher(() => {
+                nameRunCount++;
+                // 在 run 回调中访问 name 属性以收集依赖
+                const _name = reactive.value.name;
+            });
             
-            const ageWatcher = new Watcher(
-                (key) => {
-                    if (key === 'age') {
-                        ageUpdateCount++;
-                    }
-                },
-                () => {
-                    // 在 run 回调中访问 age 属性以收集依赖
-                    const _age = reactive.value.age;
-                }
-            );
+            const ageWatcher = new Watcher(() => {
+                ageRunCount++;
+                // 在 run 回调中访问 age 属性以收集依赖
+                const _age = reactive.value.age;
+            });
             
             const unsubscribe1 = reactive.watch(nameWatcher);
             const unsubscribe2 = reactive.watch(ageWatcher);
+            
+            // 重置计数器（watch 时会调用一次 run）
+            nameRunCount = 0;
+            ageRunCount = 0;
             
             // 只修改 name
             reactive.value.name = 'Jane';
             
             return new Promise<void>((resolve) => {
                 setTimeout(() => {
-                    expect(nameUpdateCount).toBeGreaterThan(0);
+                    expect(nameRunCount).toBeGreaterThan(0);
                     // age 不应该被更新
+                    expect(ageRunCount).toBe(0);
                     unsubscribe1();
                     unsubscribe2();
                     resolve();
@@ -175,17 +153,13 @@ describe('Reactive', () => {
         
         it('应该追踪数组元素访问', () => {
             const reactive = new Reactive([1, 2, 3]);
-            let updateCount = 0;
+            let runCount = 0;
             
-            const watcher = new Watcher(
-                (key, newValue, oldValue) => {
-                    updateCount++;
-                },
-                () => {
-                    // 在 run 回调中访问数组元素以收集依赖
-                    const _ = reactive.value[0];
-                }
-            );
+            const watcher = new Watcher(() => {
+                runCount++;
+                // 在 run 回调中访问数组元素以收集依赖
+                const _ = reactive.value[0];
+            });
             
             const unsubscribe = reactive.watch(watcher);
             
@@ -194,7 +168,7 @@ describe('Reactive', () => {
             
             return new Promise<void>((resolve) => {
                 setTimeout(() => {
-                    expect(updateCount).toBeGreaterThan(0);
+                    expect(runCount).toBeGreaterThan(1); // 至少调用一次（初始）+ 一次（更新）
                     unsubscribe();
                     resolve();
                 }, 10);
@@ -232,15 +206,12 @@ describe('Reactive', () => {
             const reactive = new Reactive({ a: 1, b: 2 });
             let runCount = 0;
             
-            const watcher = new Watcher(
-                () => {},
-                () => {
-                    runCount++;
-                    // 在 run 回调中访问属性以收集依赖
-                    const _a = reactive.value.a;
-                    const _b = reactive.value.b;
-                }
-            );
+            const watcher = new Watcher(() => {
+                runCount++;
+                // 在 run 回调中访问属性以收集依赖
+                const _a = reactive.value.a;
+                const _b = reactive.value.b;
+            });
             
             const unsubscribe = reactive.watch(watcher);
             // watch() 时 runCallback 会被调用一次，重置计数器以只统计属性改变后的调用
@@ -264,27 +235,26 @@ describe('Reactive', () => {
     describe('watch/unwatch', () => {
         it('应该可以注册和取消注册 watcher', () => {
             const reactive = new Reactive({ name: 'John' });
-            let updateCount = 0;
+            let runCount = 0;
             
-            const watcher = new Watcher(
-                () => {
-                    updateCount++;
-                },
-                () => {
-                    // 在 run 回调中访问属性以收集依赖
-                    const _ = reactive.value.name;
-                }
-            );
+            const watcher = new Watcher(() => {
+                runCount++;
+                // 在 run 回调中访问属性以收集依赖
+                const _ = reactive.value.name;
+            });
             
             const unsubscribe = reactive.watch(watcher);
+            
+            // 重置计数器（watch 时会调用一次 run）
+            runCount = 0;
             
             // 修改值
             reactive.value.name = 'Jane';
             
             return new Promise<void>((resolve) => {
                 setTimeout(() => {
-                    expect(updateCount).toBeGreaterThan(0);
-                    const countBefore = updateCount;
+                    expect(runCount).toBeGreaterThan(0);
+                    const countBefore = runCount;
                     
                     // 取消注册
                     unsubscribe();
@@ -294,9 +264,70 @@ describe('Reactive', () => {
                     
                     setTimeout(() => {
                         // 不应该再更新
-                        expect(updateCount).toBe(countBefore);
+                        expect(runCount).toBe(countBefore);
                         resolve();
                     }, 10);
+                }, 10);
+            });
+        });
+    });
+
+    describe('调试工具集成', () => {
+        beforeEach(() => {
+            // 确保调试器被禁用
+            const { Debugger } = require('../../src/debug/Debugger');
+            Debugger.disable();
+        });
+
+        it('应该在启用调试时创建调试钩子', () => {
+            const { Debugger } = require('../../src/debug/Debugger');
+            Debugger.enable();
+            
+            const reactive = new Reactive({ name: 'John' });
+            
+            // 应该能够获取状态
+            const state = Debugger.getReactiveState(reactive);
+            expect(state).toBeDefined();
+            expect(state.value).toEqual({ name: 'John' });
+            
+            Debugger.disable();
+        });
+
+        it('应该在禁用调试时不创建调试钩子', () => {
+            const { Debugger } = require('../../src/debug/Debugger');
+            Debugger.disable();
+            
+            const reactive = new Reactive({ name: 'John' });
+            
+            // 应该抛出错误
+            expect(() => {
+                Debugger.getReactiveState(reactive);
+            }).toThrow();
+        });
+
+        it('应该记录性能数据', () => {
+            const { Debugger } = require('../../src/debug/Debugger');
+            const { PerformanceMonitor } = require('../../src/debug/PerformanceMonitor');
+            
+            Debugger.enable();
+            PerformanceMonitor.startTracking();
+            
+            const reactive = new Reactive({ name: 'John' });
+            const watcher = new Watcher(() => {
+                const _ = reactive.value.name;
+            });
+            
+            reactive.watch(watcher);
+            reactive.value.name = 'Jane';
+            
+            return new Promise<void>((resolve) => {
+                setTimeout(() => {
+                    const stats = PerformanceMonitor.getStats();
+                    expect(stats.reactiveUpdates.count).toBeGreaterThan(0);
+                    
+                    PerformanceMonitor.stopTracking();
+                    Debugger.disable();
+                    resolve();
                 }, 10);
             });
         });

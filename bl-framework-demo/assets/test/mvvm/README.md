@@ -87,6 +87,43 @@ bindConfig 测试组件，用于在 Cocos Creator 场景中运行 bindConfig 测
 - 双向绑定玩家名称到 EditBox
 - 绑定死亡状态到 Node.active
 
+### ViewHostTestComponent.ts
+ViewHost 测试组件，用于在 Cocos Creator 场景中测试 `ViewHost` 功能（方案 C：View Contract 强类型方案）。
+
+**使用方法**：
+1. 在场景中添加一个空节点
+2. 将 `ViewHostTestComponent` 组件添加到该节点
+3. 在属性检查器中配置测试组件：
+   - `nameLabel` (Label) - 绑定玩家名称
+   - `levelLabel` (Label) - 绑定等级（带格式化）
+   - `healthLabel` (Label) - 绑定生命值文本
+   - `healthBar` (ProgressBar) - 绑定生命值进度条
+   - `nameInput` (EditBox, 可选) - 双向绑定玩家名称
+   - `deadMask` (Node) - 绑定死亡状态
+4. 配置测试选项：
+   - `autoRun`: 是否在 start 时自动运行（默认：true）
+   - `testDelay`: 测试延迟时间（秒，默认：1）
+
+**测试用例**：
+1. **testLifecycle**: 测试生命周期（onLoad 创建 ViewModel 和 View）
+2. **testDataBinding**: 测试数据绑定（onEnable 设置 ViewTarget 和绑定）
+3. **testEnableDisable**: 测试 Enable/Disable 循环（onDisable 解绑，onEnable 重新绑定）
+4. **testUpdateData**: 测试数据更新（验证响应式更新）
+5. **testTwoWayBinding**: 测试双向绑定（如果配置了 nameInput）
+
+**功能**：
+- 使用真实的 Cocos Creator 组件进行测试
+- 自动运行所有 ViewHost 测试
+- 支持手动运行测试（调用 `runTestsManually()`）
+- 防止重复运行（`hasRun` 标志）
+- 完整的生命周期测试（onLoad, onEnable, onDisable, onDestroy）
+- 测试 View Contract 模式的使用
+
+**注意**：
+- 所有测试组件通过 `@property` 声明，需要在 Cocos Creator 编辑器中手动绑定
+- 测试会创建真实的 ViewModel 和 View 实例
+- 测试完成后会在控制台输出详细的测试结果
+
 ## 🚀 快速开始
 
 ### 1. 创建测试场景
@@ -150,6 +187,30 @@ sceneMVVMTest.runBasicTests();
 3. **同 path 多个 target 测试**
    - 同 path 多个 display target（如 health 绑定到 Label 和 ProgressBar）
    - 同 path 多个 input target（如 playerName 绑定到两个 EditBox，silentDepth 防回环）
+
+### ViewHost 测试（ViewHostTestComponent）
+
+1. **生命周期测试**
+   - onLoad: 创建 ViewModel 和 View 实例
+   - onEnable: 设置 ViewTarget 并建立绑定
+   - onDisable: 解绑所有绑定
+   - onDestroy: 清理资源
+
+2. **View Contract 模式测试**
+   - View Contract 接口定义（ITestPlayerView）
+   - View 实现（TestPlayerView）
+   - ViewModel 的 bindView 方法
+   - ViewHost 的 setupViewTargets 方法
+
+3. **数据绑定测试**
+   - 单向绑定（Label, ProgressBar）
+   - 双向绑定（EditBox，可选）
+   - 格式化绑定（使用 converter）
+   - 同 path 多个 target（health 绑定到 Label 和 ProgressBar）
+
+4. **Enable/Disable 循环测试**
+   - 验证 disable 时正确解绑
+   - 验证 enable 时重新绑定
 
 ## ⚠️ 注意事项
 

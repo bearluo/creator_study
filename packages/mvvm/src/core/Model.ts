@@ -1,3 +1,4 @@
+import { Reactive } from '../reactive/Reactive';
 import type { IModel } from './types';
 
 /**
@@ -26,9 +27,11 @@ import type { IModel } from './types';
  */
 export class Model<T = any> implements IModel<T> {
     protected _data: T;
+    public readonly reactive: Reactive<T>;
     
     constructor(data: T) {
         this._data = data;
+        this.reactive = new Reactive(data);
     }
     
     /**

@@ -241,5 +241,51 @@ describe('DataBinding', () => {
             });
         });
     });
+
+    describe('调试工具集成', () => {
+        beforeEach(() => {
+            const { Debugger } = require('../../src/debug/Debugger');
+            const { PerformanceMonitor } = require('../../src/debug/PerformanceMonitor');
+            Debugger.disable();
+            PerformanceMonitor.stopTracking();
+        });
+
+        it('应该在启用调试时创建调试钩子', () => {
+            const { Debugger } = require('../../src/debug/Debugger');
+            Debugger.enable();
+            
+            const reactive = new Reactive<TestData>({ name: 'John', age: 30 });
+            const view = new TestView();
+            const binding = new DataBinding(reactive, view, 'name');
+            
+            const state = Debugger.getBindingState(binding);
+            expect(state).toBeDefined();
+            expect(state.path).toBe('name');
+            expect(state.mode).toBe('one-way');
+            
+            Debugger.disable();
+        });
+
+        it('应该记录性能数据', () => {
+            const { PerformanceMonitor } = require('../../src/debug/PerformanceMonitor');
+            PerformanceMonitor.startTracking();
+            
+            const reactive = new Reactive<TestData>({ name: 'John', age: 30 });
+            const view = new TestView();
+            const binding = new DataBinding(reactive, view, 'name');
+            
+            reactive.value.name = 'Jane';
+            
+            return new Promise<void>((resolve) => {
+                setTimeout(() => {
+                    const stats = PerformanceMonitor.getStats();
+                    expect(stats.bindingExecutions.count).toBeGreaterThan(0);
+                    
+                    PerformanceMonitor.stopTracking();
+                    resolve();
+                }, 10);
+            });
+        });
+    });
 });
 

@@ -10,7 +10,7 @@ describe('DependencyTracker', () => {
         
         it('应该追踪依赖', () => {
             const tracker = new DependencyTracker();
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             
             tracker.setCurrentWatcher(watcher);
             tracker.track('name');
@@ -29,89 +29,83 @@ describe('DependencyTracker', () => {
         });
     });
     
-    describe('触发更新', () => {
-        it('应该触发相关 watcher 的更新', () => {
+    describe('获取 watcher', () => {
+        it('应该获取相关路径的 watcher', () => {
             const tracker = new DependencyTracker();
-            let updateCount = 0;
-            let lastKey: string | symbol = '';
+            let runCount = 0;
             
-            const watcher = new Watcher(
-                (key) => {
-                    updateCount++;
-                    lastKey = key;
-                },
-                () => {}
-            );
+            const watcher = new Watcher(() => {
+                runCount++;
+            });
             
             tracker.setCurrentWatcher(watcher);
             tracker.track('name');
             tracker.setCurrentWatcher(null);
             
-            tracker.trigger('name', 'Jane', 'John');
+            const watchers = tracker.getWatchers('name');
             
-            expect(updateCount).toBe(1);
-            expect(lastKey).toBe('name');
+            expect(watchers.has(watcher)).toBe(true);
+            expect(watchers.size).toBe(1);
         });
         
-        it('应该只触发相关 key 的 watcher', () => {
+        it('应该只获取相关路径的 watcher', () => {
             const tracker = new DependencyTracker();
-            let updateCount = 0;
             
-            const watcher = new Watcher(
-                () => {
-                    updateCount++;
-                },
-                () => {}
-            );
+            const watcher1 = new Watcher(() => {});
+            const watcher2 = new Watcher(() => {});
             
-            tracker.setCurrentWatcher(watcher);
+            tracker.setCurrentWatcher(watcher1);
             tracker.track('name');
+            tracker.setCurrentWatcher(null);
+            
+            tracker.setCurrentWatcher(watcher2);
             tracker.track('age');
             tracker.setCurrentWatcher(null);
             
-            // 只触发 name
-            tracker.trigger('name', 'Jane', 'John');
+            // 只获取 name 的 watcher
+            const nameWatchers = tracker.getWatchers('name');
+            const ageWatchers = tracker.getWatchers('age');
             
-            expect(updateCount).toBe(1);
+            expect(nameWatchers.has(watcher1)).toBe(true);
+            expect(nameWatchers.has(watcher2)).toBe(false);
+            expect(ageWatchers.has(watcher1)).toBe(false);
+            expect(ageWatchers.has(watcher2)).toBe(true);
         });
     });
     
     describe('路径追踪', () => {
         it('应该追踪完整路径', () => {
             const tracker = new DependencyTracker();
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             
             tracker.setCurrentWatcher(watcher);
-            tracker.pushPath('user');
-            tracker.pushPath('profile');
-            tracker.track('name', 'user.profile.name');
-            tracker.popPath();
-            tracker.popPath();
+            tracker.track('user.profile.name');
+            tracker.setCurrentWatcher(null);
             
             expect(watcher.getDependencies().has('user.profile.name')).toBe(true);
         });
         
-        it('应该正确管理路径栈', () => {
+        it('应该追踪多个路径', () => {
             const tracker = new DependencyTracker();
+            const watcher = new Watcher(() => {});
             
-            tracker.pushPath('a');
-            expect(tracker.getCurrentPath()).toBe('a');
+            tracker.setCurrentWatcher(watcher);
+            tracker.track('name');
+            tracker.track('age');
+            tracker.track('user.profile.email');
+            tracker.setCurrentWatcher(null);
             
-            tracker.pushPath('b');
-            expect(tracker.getCurrentPath()).toBe('a.b');
-            
-            tracker.popPath();
-            expect(tracker.getCurrentPath()).toBe('a');
-            
-            tracker.popPath();
-            expect(tracker.getCurrentPath()).toBe('');
+            expect(watcher.getDependencies().has('name')).toBe(true);
+            expect(watcher.getDependencies().has('age')).toBe(true);
+            expect(watcher.getDependencies().has('user.profile.email')).toBe(true);
+            expect(watcher.getDependencies().size).toBe(3);
         });
     });
     
     describe('移除 watcher', () => {
         it('应该移除 watcher 的所有依赖', () => {
             const tracker = new DependencyTracker();
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             
             tracker.setCurrentWatcher(watcher);
             tracker.track('name');
@@ -132,7 +126,7 @@ describe('DependencyTracker', () => {
     describe('清除', () => {
         it('应该清除所有依赖', () => {
             const tracker = new DependencyTracker();
-            const watcher = new Watcher(() => {}, () => {});
+            const watcher = new Watcher(() => {});
             
             tracker.setCurrentWatcher(watcher);
             tracker.track('name');

@@ -9,6 +9,7 @@ bl-framework MVVM 框架，提供完整的 Model-View-ViewModel 架构模式支�
 - ✅ **数据绑定**：支持单向、双向和单向到源的数据绑定
 - ✅ **框架无关**：核心模块不依赖任何 UI 框架
 - ✅ **轻量级**：零运行时依赖，仅使用 TypeScript 和 ES6+ 特性
+- ✅ **调试工具**：完整的调试工具链，包括日志、性能监控、依赖追踪和错误增强
 
 ## 安装
 
@@ -656,6 +657,181 @@ interface IReactive<T> {
     unwatch(watcher: Watcher): void;
 }
 ```
+
+## 调试工具
+
+MVVM 框架提供了一套完整的调试工具链，帮助开发者快速定位和解决 MVVM 相关问题。
+
+### Debugger（调试器）
+
+调试器主类，提供统一的调试 API。
+
+```typescript
+import { Debugger } from '@bl-framework/mvvm';
+
+// 启用调试（必须在创建 Reactive/ViewModel/DataBinding 之前）
+Debugger.enable();
+
+// 查询 Reactive 状态
+const state = Debugger.getReactiveState(reactive);
+console.log('Value:', state.value);
+console.log('Watchers:', state.watchers.length);
+
+// 查询 ViewModel 状态
+const vmState = Debugger.getViewModelState(viewModel);
+console.log('Bindings:', vmState.bindings.length);
+
+// 查询 DataBinding 状态
+const bindingState = Debugger.getBindingState(binding);
+console.log('Path:', bindingState.path);
+console.log('Mode:', bindingState.mode);
+
+// 获取依赖关系图
+const graph = Debugger.getDependencyGraph(reactive);
+console.log('Dependencies:', graph.paths);
+
+// 查询路径依赖
+const dependencies = Debugger.getPathDependencies(reactive, 'user.name');
+const dependents = Debugger.getPathDependents(reactive, 'user');
+
+// 查询 Watcher 依赖
+const watcherDeps = Debugger.getWatcherDependencies(watcher);
+```
+
+### Logger（日志系统）
+
+分类日志系统，支持级别控制和过滤。
+
+```typescript
+import { Logger, LogLevel, LogCategory } from '@bl-framework/mvvm';
+
+// 启用日志
+Logger.enable();
+
+// 设置日志级别
+Logger.setLevel(LogLevel.DEBUG); // DEBUG, INFO, WARN, ERROR
+
+// 启用/禁用特定分类
+Logger.setCategoryEnabled(LogCategory.REACTIVE, true);
+Logger.setCategoryEnabled(LogCategory.BINDING, true);
+Logger.setCategoryEnabled(LogCategory.VIEWMODEL, true);
+Logger.setCategoryEnabled(LogCategory.PERFORMANCE, true);
+
+// 记录日志
+Logger.debug(LogCategory.REACTIVE, 'Reactive updated', { path: 'name' });
+Logger.info(LogCategory.BINDING, 'Binding created');
+Logger.warn(LogCategory.VIEWMODEL, 'Warning message');
+Logger.error(LogCategory.BINDING, 'Error occurred', { error });
+```
+
+### PerformanceMonitor（性能监控）
+
+性能监控工具，用于追踪响应式更新和绑定执行的性能。
+
+```typescript
+import { PerformanceMonitor } from '@bl-framework/mvvm';
+
+// 启动性能监控
+PerformanceMonitor.startTracking();
+
+// 执行操作...
+
+// 获取性能统计
+const stats = PerformanceMonitor.getStats();
+console.log('Reactive Updates:', {
+    count: stats.reactiveUpdates.count,
+    averageTime: stats.reactiveUpdates.averageTime,
+    maxTime: stats.reactiveUpdates.maxTime,
+    minTime: stats.reactiveUpdates.minTime
+});
+
+console.log('Binding Executions:', {
+    count: stats.bindingExecutions.count,
+    averageTime: stats.bindingExecutions.averageTime
+});
+
+// 生成性能报告
+const report = PerformanceMonitor.generateReport();
+console.log(report);
+
+// 清除统计
+PerformanceMonitor.clearStats();
+
+// 停止性能监控
+PerformanceMonitor.stopTracking();
+```
+
+### ErrorEnhancer（错误增强）
+
+错误增强工具，提供详细的错误信息和恢复建议。
+
+```typescript
+import { ErrorEnhancer } from '@bl-framework/mvvm';
+
+try {
+    // 某些 MVVM 操作
+} catch (error) {
+    // 增强错误信息
+    const enhanced = ErrorEnhancer.enhance(error, {
+        reactive,
+        viewModel,
+        binding,
+        customInfo: 'Additional context'
+    });
+    
+    // 格式化并输出错误
+    const formatted = ErrorEnhancer.format(enhanced);
+    console.error(formatted);
+    
+    // 访问增强的错误信息
+    console.log('Original Error:', enhanced.originalError);
+    console.log('Context:', enhanced.context);
+    console.log('Suggestions:', enhanced.suggestions);
+}
+```
+
+### 调试工具最佳实践
+
+1. **开发环境启用调试**：
+   ```typescript
+   if (process.env.NODE_ENV === 'development') {
+       Debugger.enable();
+       Logger.enable();
+       Logger.setLevel(LogLevel.DEBUG);
+   }
+   ```
+
+2. **性能分析**：
+   ```typescript
+   PerformanceMonitor.startTracking();
+   // 执行需要分析的操作
+   const stats = PerformanceMonitor.getStats();
+   // 分析性能数据
+   PerformanceMonitor.stopTracking();
+   ```
+
+3. **错误处理**：
+   ```typescript
+   try {
+       // MVVM 操作
+   } catch (error) {
+       if (Debugger.isEnabled()) {
+           const enhanced = ErrorEnhancer.enhance(error, { viewModel });
+           console.error(ErrorEnhancer.format(enhanced));
+       } else {
+           console.error(error);
+       }
+   }
+   ```
+
+4. **依赖追踪**：
+   ```typescript
+   // 在启用调试后，可以查询依赖关系
+   const graph = Debugger.getDependencyGraph(reactive);
+   // 分析依赖关系，找出性能瓶颈
+   ```
+
+更多调试工具使用示例，请参考 `examples/debug-usage.ts`。
 
 ## 命名空间导出
 

@@ -1,5 +1,10 @@
-import type { IReactive, Watcher } from '../core/types';
+import type { IReactive, Watcher as IWatcher } from '../core/types';
+import { Watcher } from './Watcher';
 import { DependencyTracker } from './DependencyTracker';
+import { Debugger } from '../debug/Debugger';
+import { ReactiveDebugHook } from '../debug/hooks/ReactiveDebugHook';
+import { Logger, LogCategory } from '../debug/Logger';
+import { PerformanceMonitor } from '../debug/PerformanceMonitor';
 
 /**
  * 响应式数据
@@ -25,13 +30,13 @@ import { DependencyTracker } from './DependencyTracker';
 export class Reactive<T> implements IReactive<T> {
     private _value: T;
     private _proxy: T;
-    private watchers: Set<Watcher> = new Set();
+    private watchers: Set<IWatcher> = new Set<IWatcher>();
     
     /** 依赖追踪器 */
     private dependencyTracker: DependencyTracker;
     
     /** 更新队列（用于批量更新和去重） */
-    private updateQueue: Set<Watcher> = new Set();
+    private updateQueue: Set<IWatcher> = new Set();
     
     /** 是否已调度批量更新 */
     private flushScheduled: boolean = false;
@@ -39,10 +44,19 @@ export class Reactive<T> implements IReactive<T> {
     /** 已创建的 Proxy 映射（用于处理循环引用） */
     private proxyMap: WeakMap<object, any> = new WeakMap();
     
+    /** 调试钩子 */
+    private debugHook?: ReactiveDebugHook;
+    
     constructor(value: T) {
         this._value = value;
         this.dependencyTracker = new DependencyTracker();
         this._proxy = this._createProxy(value, '');
+        
+        // 如果调试已启用，创建调试钩子
+        if (Debugger.isEnabled()) {
+            this.debugHook = new ReactiveDebugHook(this, this.dependencyTracker);
+            Debugger.registerHook(this, this.debugHook);
+        }
     }
     
     /**
@@ -58,6 +72,14 @@ export class Reactive<T> implements IReactive<T> {
      */
     getDependencyTracker(): DependencyTracker {
         return this.dependencyTracker;
+    }
+    
+    /**
+     * 获取所有观察者（用于调试）
+     * @internal
+     */
+    getWatchers(): ReadonlySet<IWatcher> {
+        return this.watchers;
     }
     
     /**
@@ -79,6 +101,19 @@ export class Reactive<T> implements IReactive<T> {
         this.watchers.delete(watcher);
         // 从依赖追踪器中移除
         this.dependencyTracker.removeWatcher(watcher);
+    }
+    
+    /**
+     * 销毁 Reactive 实例
+     */
+    destroy(): void {
+        if (this.debugHook) {
+            Debugger.unregisterHook(this);
+        }
+        this.watchers.clear();
+        this.dependencyTracker.clear();
+        this.updateQueue.clear();
+        this.proxyMap = new WeakMap();
     }
     
     /**
@@ -230,12 +265,22 @@ export class Reactive<T> implements IReactive<T> {
      * 触发更新
      */
     private _triggerUpdate(path: string, newValue: any, oldValue: any): void {
+        Logger.debug(LogCategory.REACTIVE, `Path "${path}" updated`, {
+            oldValue,
+            newValue
+        });
+        
+        // 记录路径更新（用于调试）
+        if (this.debugHook) {
+            this.debugHook.recordPathUpdate(path);
+        }
+        
         // 使用依赖追踪器获取相关的 watcher
         const watchers = this.dependencyTracker.getWatchers(path);
         
         // 添加到更新队列（用于批量更新 run 回调，自动去重）
         watchers.forEach(watcher => {
-            this.updateQueue.add(watcher);
+            this.updateQueue.add(watcher as Watcher);
         });
         
         // 调度批量更新
@@ -263,6 +308,8 @@ export class Reactive<T> implements IReactive<T> {
     private _flushUpdates(): void {
         this.flushScheduled = false;
         
+        const startTime = (PerformanceMonitor.isTracking() || this.debugHook) ? performance.now() : 0;
+        
         // 收集需要更新的 watcher（自动去重）
         const watchersToUpdate = new Set(this.updateQueue);
         this.updateQueue.clear();
@@ -270,11 +317,30 @@ export class Reactive<T> implements IReactive<T> {
         // 批量更新 run 回调
         watchersToUpdate.forEach(w => {
             if (!this.watchers.has(w)) return; // watcher 已 unwatch/destroy
+            
+            const watcherStartTime = (PerformanceMonitor.isTracking() || this.debugHook) ? performance.now() : 0;
             this._runWithTracking(w);
+            
+            // 记录 Watcher 运行
+            if (this.debugHook) {
+                const watcherDuration = watcherStartTime > 0 ? performance.now() - watcherStartTime : undefined;
+                this.debugHook.recordWatcherRun(w, watcherDuration);
+            }
         });
+        
+        // 记录更新耗时
+        if (startTime > 0) {
+            const duration = performance.now() - startTime;
+            if (PerformanceMonitor.isTracking()) {
+                PerformanceMonitor.recordReactiveUpdate(duration);
+            }
+            if (this.debugHook) {
+                this.debugHook.recordUpdate(duration);
+            }
+        }
     }
 
-    private _runWithTracking(watcher: Watcher) {
+    private _runWithTracking(watcher: IWatcher) {
         // 先清理旧依赖（防止依赖累积、过期依赖继续触发）
         this.dependencyTracker.removeWatcher(watcher);
 

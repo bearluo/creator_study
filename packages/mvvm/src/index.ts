@@ -46,8 +46,25 @@ export { DependencyTracker } from './reactive/DependencyTracker';
 export { DataBinding } from './binding/DataBinding';
 export { BindingManager } from './binding/BindingManager';
 
-// ==================== 工具模块 ====================
-// (已移除)
+// ==================== 调试工具模块 ====================
+
+export { Debugger } from './debug/Debugger';
+export { Logger, LogLevel, LogCategory } from './debug/Logger';
+export { PerformanceMonitor } from './debug/PerformanceMonitor';
+export { ErrorEnhancer, type EnhancedError } from './debug/ErrorEnhancer';
+export type { PerformanceStats } from './debug/PerformanceMonitor';
+export type {
+    ReactiveState,
+    ViewModelState,
+    BindingState,
+    DependencyGraph,
+    WatcherInfo,
+    PathDependencyInfo,
+    WatcherDependencyInfo,
+    ModelSnapshot,
+    BindingInfo,
+    ErrorInfo
+} from './debug/types';
 
 // ==================== 指令模块 ====================
 
