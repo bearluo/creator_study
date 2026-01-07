@@ -6,8 +6,8 @@
  */
 
 import { _decorator, Label, EditBox, ProgressBar } from 'cc';
-import { Model, ViewModel } from '@bl-framework/mvvm';
-import { ViewHost, View } from '@bl-framework/mvvm-creator';
+import { Model } from '@bl-framework/mvvm';
+import { ViewHost, View, ViewModel } from '@bl-framework/mvvm-creator';
 import { toLabelText, toProgress, toEditBox } from '@bl-framework/mvvm-creator';
 import type { ViewTarget } from '@bl-framework/mvvm-creator';
 

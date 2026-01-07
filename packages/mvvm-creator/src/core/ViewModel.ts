@@ -30,10 +30,10 @@ function isIView(x: unknown): x is IView {
 }
 
 export class ViewModel<T = any> extends ViewModelBase<T> {
-    protected bindingBuilder!: BindingBuilder<T>;
+    // protected bindingBuilder!: BindingBuilder<T>;
     constructor(model: Model<T>)  {
         super(model);
-        this.bindingBuilder = new BindingBuilder<T>(this);
+        // this.bindingBuilder = new BindingBuilder<T>(this);
     }
     // 1️⃣ 绑定 IView（旧用法，保留）
     override bind<P extends Path<T> & string>(path: P, view: IView, options?: BindingOptions<PathValue<T, P>>): DataBinding<T, PathValue<T, P>>;
